@@ -43,7 +43,7 @@ vignettes/*.pdf
 .Renviron
 
 # pkgdown site
-docs/
+# docs/ - removed to allow GitHub Pages
 
 # translation temp files
 po/*~

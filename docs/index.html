@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuneTeller | AI-Powered Music Recommendations</title>
+    <meta name="description" content="Get personalized music artist recommendations using natural language. Powered by OpenAI and Spotify.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --spotify-green: #1DB954;
+            --spotify-green-dark: #1aa34a;
+            --spotify-black: #191414;
+            --spotify-dark: #121212;
+            --text: #ffffff;
+            --text-light: #b3b3b3;
+            --bg: #191414;
+            --bg-alt: #282828;
+            --border: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text);
+            line-height: 1.6;
+            background: var(--bg);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 100px 0 80px;
+            text-align: center;
+            background: linear-gradient(180deg, #1a1a1a 0%, var(--bg) 100%);
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 .tune {
+            color: var(--text);
+        }
+
+        .hero h1 .teller {
+            color: var(--spotify-green);
+        }
+
+        .hero .tagline {
+            font-size: 1.35rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            border-radius: 500px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--spotify-green);
+            color: var(--spotify-black);
+        }
+
+        .btn-primary:hover {
+            background: var(--spotify-green-dark);
+            transform: scale(1.04);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text);
+            transform: scale(1.04);
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 80px 0;
+        }
+
+        .how-it-works h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 50px;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .steps {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 500px) {
+            .steps {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .step {
+            text-align: center;
+            padding: 24px 16px;
+        }
+
+        .step-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--bg-alt);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 16px;
+        }
+
+        .step h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Features */
+        .features {
+            padding: 80px 0;
+            background: var(--bg-alt);
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 50px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg);
+            padding: 28px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.15rem;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Tech Stack */
+        .tech {
+            padding: 80px 0;
+        }
+
+        .tech h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 50px;
+        }
+
+        .tech-grid {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .tech-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tech-badge {
+            background: var(--bg-alt);
+            padding: 20px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+
+        .tech-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* API Section */
+        .api {
+            padding: 80px 0;
+            background: var(--bg-alt);
+        }
+
+        .api h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .api .subtitle {
+            text-align: center;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .api-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .api-card {
+            background: var(--bg);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .api-card h3 {
+            margin-bottom: 8px;
+        }
+
+        .api-card p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        footer p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        footer a {
+            color: var(--spotify-green);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .tagline {
+                font-size: 1.1rem;
+            }
+
+            .hero {
+                padding: 60px 0 50px;
+            }
+
+            .how-it-works, .features, .tech, .api {
+                padding: 50px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="container">
+            <h1><span class="tune">Tune</span><span class="teller">Teller</span></h1>
+            <p class="tagline">
+                Describe the music you're in the mood for, and let AI find the perfect artist for you.
+                Powered by OpenAI and Spotify.
+            </p>
+            <div class="cta-buttons">
+                <a href="https://youcanbeapirate.shinyapps.io/TuneTeller/" class="btn btn-primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+                    </svg>
+                    Try It Now
+                </a>
+                <a href="https://github.com/AnttiRask/music_recommender" class="btn btn-secondary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    View Source
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2>How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">✍️</div>
+                    <h3>Describe</h3>
+                    <p>Tell us what kind of music you're in the mood for in your own words.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🤖</div>
+                    <h3>AI Analyzes</h3>
+                    <p>OpenAI interprets your request and finds the perfect artist match.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🎧</div>
+                    <h3>Spotify Lookup</h3>
+                    <p>We fetch artist details, images, and follower counts from Spotify.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">🎵</div>
+                    <h3>Discover</h3>
+                    <p>Get your recommendation with a direct link to the artist on Spotify.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🗣️</div>
+                    <h3>Natural Language</h3>
+                    <p>No need to know genres or artist names. Just describe what you want to hear.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Instant Results</h3>
+                    <p>Get personalized recommendations in seconds, not minutes.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Rich Artist Cards</h3>
+                    <p>See artist photos, follower counts, and detailed descriptions.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔗</div>
+                    <h3>Direct to Spotify</h3>
+                    <p>One click takes you straight to the artist's Spotify profile.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌙</div>
+                    <h3>Dark Theme</h3>
+                    <p>Easy on the eyes with a Spotify-inspired dark interface.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Mobile Friendly</h3>
+                    <p>Works great on any device, from phones to desktops.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="tech">
+        <div class="container">
+            <h2>Built With</h2>
+            <div class="tech-grid">
+                <div class="tech-item">
+                    <div class="tech-badge">R</div>
+                    <span class="tech-label">Language</span>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-badge">Shiny</div>
+                    <span class="tech-label">Framework</span>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-badge">OpenAI</div>
+                    <span class="tech-label">AI Engine</span>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-badge">Spotify API</div>
+                    <span class="tech-label">Music Data</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="api">
+        <div class="container">
+            <h2>Powered By</h2>
+            <p class="subtitle">TuneTeller combines two powerful APIs to deliver intelligent music recommendations.</p>
+            <div class="api-cards">
+                <div class="api-card">
+                    <h3>OpenAI GPT-4o-mini</h3>
+                    <p>Understands your natural language descriptions and matches them to music artists.</p>
+                </div>
+                <div class="api-card">
+                    <h3>Spotify Web API</h3>
+                    <p>Provides artist details, images, follower counts, and profile links.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Created by <a href="https://anttirask.github.io">Antti Rask</a></p>
+            <div class="footer-links">
+                <a href="https://github.com/AnttiRask/music_recommender">GitHub</a>
+                <a href="https://youcanbeapirate.shinyapps.io/TuneTeller/">Live App</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
