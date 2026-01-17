@@ -13,8 +13,7 @@
 
 ## 📸 Screenshot
 
-<!-- TODO: Add screenshot to img/screenshot.png -->
-*Screenshot coming soon*
+![TuneTeller screenshot](img/screenshot.png)
 
 ## 🚀 Live App
 
