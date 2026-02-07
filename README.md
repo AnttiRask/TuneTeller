@@ -17,7 +17,7 @@
 
 ## 🚀 Live App
 
-👉 [Try it live on shinyapps.io](https://youcanbeapirate.shinyapps.io/TuneTeller/)
+👉 [Try it live](https://tuneteller.youcanbeapirate.com/)
 
 ## 🛠️ Project Structure
 
