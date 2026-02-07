@@ -73,9 +73,66 @@
 | `SPOTIFY_CLIENT_ID` | Spotify Developer app client ID |
 | `SPOTIFY_CLIENT_SECRET` | Spotify Developer app client secret |
 
+## Using Secrets (Recommended for Production)
+
+For better security, store credentials as secrets:
+
+```bash
+# Enable the Secret Manager API
+gcloud services enable secretmanager.googleapis.com
+
+# Create secrets
+echo -n "your_openai_key" | gcloud secrets create openai-api-key --data-file=-
+echo -n "your_client_id" | gcloud secrets create spotify-client-id --data-file=-
+echo -n "your_client_secret" | gcloud secrets create spotify-client-secret --data-file=-
+
+# Grant Cloud Run access to secrets
+PROJECT_NUMBER=$(gcloud projects describe tuneteller-app --format="value(projectNumber)")
+
+for SECRET in openai-api-key spotify-client-id spotify-client-secret; do
+  gcloud secrets add-iam-policy-binding $SECRET \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/secretmanager.secretAccessor"
+done
+
+# Deploy with secrets
+gcloud run deploy tuneteller-app \
+  --source . \
+  --platform managed \
+  --region europe-north1 \
+  --allow-unauthenticated \
+  --set-secrets "OPENAI_API_KEY=openai-api-key:latest" \
+  --set-secrets "SPOTIFY_CLIENT_ID=spotify-client-id:latest" \
+  --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
+  --memory 1Gi \
+  --timeout 300
+```
+
 ## Cost
 
 Google Cloud Run has a generous free tier that covers personal use:
 - 2 million requests/month
 - 360,000 GB-seconds of memory
 - 180,000 vCPU-seconds of compute
+
+For a personal project with occasional use, this should be **completely free**.
+
+## Updating the App
+
+To deploy updates:
+
+```bash
+gcloud run deploy tuneteller-app --source .
+```
+
+## Monitoring
+
+View logs:
+
+```bash
+gcloud run logs read tuneteller-app --region europe-north1
+```
+
+View in console:
+
+- [Cloud Run Console](https://console.cloud.google.com/run)
