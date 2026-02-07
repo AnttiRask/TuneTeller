@@ -1,0 +1,15 @@
+services:
+  shiny-app:
+    build: .
+    ports:
+      - "8081:8080"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - PORT=8080
+      - SHINY_ENV=development
+    volumes:
+      # Mount for development - allows live code changes
+      - ./app:/srv/shiny-server/app/app
+    restart: unless-stopped
