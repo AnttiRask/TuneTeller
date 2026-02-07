@@ -29,13 +29,13 @@ if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" &> /dev/n
     gcloud auth login
 fi
 
-# Set project
+# Set project (create if it doesn't exist)
 echo -e "${YELLOW}Setting project to: ${PROJECT_ID}${NC}"
-gcloud config set project "$PROJECT_ID" 2>/dev/null || {
+if ! gcloud projects describe "$PROJECT_ID" &> /dev/null; then
     echo -e "${YELLOW}Project doesn't exist. Creating...${NC}"
     gcloud projects create "$PROJECT_ID" --name="TuneTeller"
-    gcloud config set project "$PROJECT_ID"
-}
+fi
+gcloud config set project "$PROJECT_ID"
 
 # Enable required APIs
 echo -e "${YELLOW}Enabling required APIs...${NC}"
