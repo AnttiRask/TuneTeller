@@ -41,40 +41,20 @@ gcloud config set project "$PROJECT_ID"
 echo -e "${YELLOW}Enabling required APIs...${NC}"
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com artifactregistry.googleapis.com
 
-# Check for required environment variables
-if [ -z "$OPENAI_API_KEY" ] || [ -z "$SPOTIFY_CLIENT_ID" ] || [ -z "$SPOTIFY_CLIENT_SECRET" ]; then
-    echo -e "${YELLOW}API credentials not set in environment.${NC}"
+# Enable Secret Manager API
+echo -e "${YELLOW}Enabling Secret Manager API...${NC}"
+gcloud services enable secretmanager.googleapis.com
 
-    # Try to read from .env file
-    if [ -f .env ]; then
-        echo "Reading from .env file..."
-        export $(grep -v '^#' .env | xargs)
-    fi
-
-    # Still not set? Ask user
-    if [ -z "$OPENAI_API_KEY" ]; then
-        read -sp "Enter OPENAI_API_KEY: " OPENAI_API_KEY
-        echo
-    fi
-    if [ -z "$SPOTIFY_CLIENT_ID" ]; then
-        read -p "Enter SPOTIFY_CLIENT_ID: " SPOTIFY_CLIENT_ID
-    fi
-    if [ -z "$SPOTIFY_CLIENT_SECRET" ]; then
-        read -sp "Enter SPOTIFY_CLIENT_SECRET: " SPOTIFY_CLIENT_SECRET
-        echo
-    fi
-fi
-
-# Deploy to Cloud Run
+# Deploy to Cloud Run using Cloud Secrets Manager
 echo -e "${GREEN}Deploying to Cloud Run...${NC}"
 gcloud run deploy "$SERVICE_NAME" \
     --source . \
     --platform managed \
     --region "$REGION" \
     --allow-unauthenticated \
-    --set-env-vars "OPENAI_API_KEY=$OPENAI_API_KEY" \
-    --set-env-vars "SPOTIFY_CLIENT_ID=$SPOTIFY_CLIENT_ID" \
-    --set-env-vars "SPOTIFY_CLIENT_SECRET=$SPOTIFY_CLIENT_SECRET" \
+    --set-secrets "OPENAI_API_KEY=openai-api-key:latest" \
+    --set-secrets "SPOTIFY_CLIENT_ID=spotify-client-id:latest" \
+    --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
     --memory 1Gi \
     --timeout 300
 

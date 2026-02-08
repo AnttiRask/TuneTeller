@@ -140,6 +140,7 @@ server <- function(input, output, session) {
     # Extract artist name and format the info with HTML line breaks
     artist_name <- recommendation$artist
     artist_info <- str_c(recommendation$info, collapse = " ") %>%
+      htmltools::htmlEscape() %>%
       str_replace_all("  ", "<br><br>")
 
     # Fetch artist details from Spotify using {spotifyr} package
