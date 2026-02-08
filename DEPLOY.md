@@ -23,7 +23,7 @@
    docker compose up --build
    ```
 
-3. Open http://localhost:8080
+3. Open http://localhost:8081
 
 ## Deploy to Google Cloud Run
 

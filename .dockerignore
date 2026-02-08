@@ -32,7 +32,6 @@ docker-compose.yml
 
 # Deployment
 deploy.sh
-deploy_app.R
 
 # Misc
 *.log

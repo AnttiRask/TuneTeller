@@ -22,7 +22,7 @@
 ## 🛠️ Project Structure
 
 ```
-music_recommender/
+TuneTeller/
 ├── app/
 │   ├── run.R                    # App entry point
 │   ├── server.R                 # Server logic (OpenAI + Spotify API calls)
@@ -32,7 +32,9 @@ music_recommender/
 │       ├── placeholder_image.png # Default image before recommendation
 │       ├── prompt_versions.R    # OpenAI prompt templates
 │       └── styles.css           # Custom dark theme styles
-├── deploy_app.R                 # Legacy deployment script
+├── deploy.sh                    # Google Cloud Run deployment script
+├── Dockerfile                   # Container image definition
+├── docker-compose.yml           # Local development setup
 ├── img/                         # Images for documentation
 ├── renv.lock                    # Package dependencies lock file
 └── renv/                        # renv package management
