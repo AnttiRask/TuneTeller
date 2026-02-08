@@ -32,7 +32,7 @@ music_recommender/
 │       ├── placeholder_image.png # Default image before recommendation
 │       ├── prompt_versions.R    # OpenAI prompt templates
 │       └── styles.css           # Custom dark theme styles
-├── deploy_app.R                 # Deployment script for shinyapps.io
+├── deploy_app.R                 # Legacy deployment script
 ├── img/                         # Images for documentation
 ├── renv.lock                    # Package dependencies lock file
 └── renv/                        # renv package management
@@ -74,13 +74,7 @@ shiny::runApp("app/")
 
 ## 🔐 Deployment
 
-This project uses rsconnect to deploy to shinyapps.io:
-
-```r
-source("deploy_app.R")
-```
-
-Secrets are passed through environment variables configured in shinyapps.io dashboard.
+Deployed to Google Cloud Run. See `deploy.sh` and `DEPLOY.md` for details.
 
 ## 📦 Required R Packages
 
@@ -103,7 +97,7 @@ Secrets are passed through environment variables configured in shinyapps.io dash
 | AI | OpenAI GPT-4o-mini |
 | Music Data | Spotify Web API |
 | Styling | Custom CSS (dark theme) |
-| Deployment | shinyapps.io |
+| Deployment | Google Cloud Run |
 
 ## 📄 License
 
