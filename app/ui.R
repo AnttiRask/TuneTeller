@@ -1,9 +1,54 @@
 # Load needed packages
 library(shiny)              # Core Shiny package
+library(bslib)              # For modern Bootstrap 5 theming
 library(shinyBS)            # For Bootstrap components in Shiny
 library(shinycssloaders)    # For adding CSS loaders/spinners
 
-ui <- fluidPage(
+# Shared footer component for cross-linking between apps
+create_app_footer <- function(current_app = "") {
+    tags$footer(
+        class = "app-footer mt-5 py-4 border-top",
+        div(
+            class = "container text-center",
+            div(
+                class = "footer-apps mb-3",
+                p(class = "text-muted mb-2", "youcanbeapiRate apps:"),
+                div(
+                    class = "d-flex justify-content-center gap-3 flex-wrap",
+                    if(current_app != "trackteller")
+                        a(href = "https://trackteller.youcanbeapirate.com", "TrackTeller"),
+                    if(current_app != "tuneteller")
+                        a(href = "https://tuneteller.youcanbeapirate.com", "TuneTeller"),
+                    if(current_app != "bibliostatus")
+                        a(href = "https://bibliostatus.youcanbeapirate.com", "BiblioStatus"),
+                    if(current_app != "gallery")
+                        a(href = "https://galleryoftheday.youcanbeapirate.com", "Gallery of the Day")
+                )
+            ),
+            div(
+                class = "footer-credit",
+                p(
+                    "Created by ",
+                    a(href = "https://anttirask.github.io", "Antti Rask"),
+                    " | ",
+                    a(href = "https://youcanbeapirate.com", "youcanbeapirate.com")
+                )
+            )
+        )
+    )
+}
+
+ui <- page_fluid(
+    theme = bs_theme(
+        version = 5,
+        bg = "#191414",
+        fg = "#FFFFFF",
+        primary = "#C1272D",
+        base_font = font_link(
+            family = "Gotham",
+            href = "https://fonts.cdnfonts.com/css/gotham-6"
+        )
+    ),
 
     # The tab title and favicon
     tags$head(
@@ -65,5 +110,8 @@ ui <- fluidPage(
                 ) # div
             ) # mainPanel
         ) # sidebarLayout
-    ) # div
-) # fluidPage
+    ), # div
+
+    # Add footer with cross-linking
+    create_app_footer("tuneteller")
+) # page_fluid

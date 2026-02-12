@@ -9,7 +9,7 @@ body {
 
 h2, .h2 {
     font-family: "Gotham", sans-serif;
-    color: #d94248;
+    color: #C1272D;
     font-size: 70px;
     margin-bottom: 30px;
     text-align: center;
@@ -17,7 +17,7 @@ h2, .h2 {
 
 h3, .h3 {
     font-family: "Gotham", sans-serif;
-    color: #d94248;
+    color: #C1272D;
 }
 
 a:focus, a:hover {
@@ -29,7 +29,7 @@ a:focus, a:hover {
 .alert-info {
     color: #C1272D;
     background-color: #ea979a;
-    border-color: #d94248;
+    border-color: #C1272D;
 }
 
 .artist-card {
@@ -80,7 +80,7 @@ a:focus, a:hover {
 }
 
 .button-recommendation {
-    background-color: #d94248;
+    background-color: #C1272D;
     color: #FFFFFF;
     border: none;
     padding: 10px 20px;
@@ -89,14 +89,14 @@ a:focus, a:hover {
 }
 
 .button-recommendation:active {
-    background-color: #d94248 !important; 
+    background-color: #C1272D !important; 
     border: 1px solid #FFFFFF !important;
     color: #FFFFFF !important; 
     box-shadow: 0 0 0 3px #C1272D;
 }
 
 .button-recommendation:focus {
-    background-color: #d94248;
+    background-color: #C1272D;
     border: 1px solid #FFFFFF;
     color: #FFFFFF;
 }
@@ -135,9 +135,9 @@ a:focus, a:hover {
 }
 
 .form-control:focus {
-    border-color: #d94248;
+    border-color: #C1272D;
     outline: 0;
-    box-shadow: inset 0 1px 1px #1a1a1a, 0 0 8px #d94248;
+    box-shadow: inset 0 1px 1px #1a1a1a, 0 0 8px #C1272D;
 }
 
 .well {
@@ -162,4 +162,47 @@ a:focus, a:hover {
 img {
     height: 100%;
     width:  100%; /* Adjust this to control the image size */
+}
+
+/* Footer styling */
+.app-footer {
+    border-top: 1px solid #333333;
+    margin-top: 3rem;
+    padding-top: 2rem;
+}
+
+.app-footer a {
+    color: #C1272D;
+    text-decoration: none;
+}
+
+.app-footer a:hover {
+    color: #a02025;
+    text-decoration: underline;
+}
+
+.app-footer .text-muted {
+    color: #808080 !important;
+}
+
+/* Accessibility - Keyboard Navigation */
+a:focus, button:focus, input:focus, select:focus, textarea:focus {
+    outline: 2px solid #C1272D;
+    outline-offset: 2px;
+}
+
+/* Skip link for screen readers */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #191414;
+    color: #fff;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    top: 0;
 }
