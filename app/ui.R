@@ -12,24 +12,23 @@ create_app_footer <- function(current_app = "") {
             class = "container text-center",
             div(
                 class = "footer-apps mb-3",
-                p(class = "text-muted mb-2", "youcanbeapiRate apps:"),
                 div(
                     class = "d-flex justify-content-center gap-3 flex-wrap",
-                    if(current_app != "trackteller")
-                        a(href = "https://trackteller.youcanbeapirate.com", "TrackTeller"),
-                    if(current_app != "tuneteller")
-                        a(href = "https://tuneteller.youcanbeapirate.com", "TuneTeller"),
                     if(current_app != "bibliostatus")
                         a(href = "https://bibliostatus.youcanbeapirate.com", "BiblioStatus"),
                     if(current_app != "gallery")
-                        a(href = "https://galleryoftheday.youcanbeapirate.com", "Gallery of the Day")
+                        a(href = "https://galleryoftheday.youcanbeapirate.com", "Gallery of the Day"),
+                    if(current_app != "trackteller")
+                        a(href = "https://trackteller.youcanbeapirate.com", "TrackTeller"),
+                    if(current_app != "tuneteller")
+                        a(href = "https://tuneteller.youcanbeapirate.com", "TuneTeller")
                 )
             ),
             div(
                 class = "footer-credit",
                 p(
                     "Created by ",
-                    a(href = "https://anttirask.github.io", "Antti Rask"),
+                    a(href = "https://www.linkedin.com/in/antti-rask/", "Antti Rask"),
                     " | ",
                     a(href = "https://youcanbeapirate.com", "youcanbeapirate.com")
                 )
