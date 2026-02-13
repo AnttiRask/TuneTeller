@@ -28,7 +28,7 @@ create_app_footer <- function(current_app = "") {
                 class = "footer-credit",
                 p(
                     "Created by ",
-                    a(href = "https://www.linkedin.com/in/antti-rask/", "Antti Rask"),
+                    a(href = "https://www.linkedin.com/in/AnttiRask/", "Antti Rask"),
                     " | ",
                     a(href = "https://youcanbeapirate.com", "youcanbeapirate.com")
                 )
