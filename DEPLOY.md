@@ -140,3 +140,12 @@ gcloud run logs read tuneteller-app --region europe-north1
 View in console:
 
 - [Cloud Run Console](https://console.cloud.google.com/run)
+
+
+## Automatic deploys (GitHub Actions)
+
+A push to `main` that changes `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` runs `.github/workflows/deploy_shiny_app.yml`: the tests (`tests.yml`) must pass, then the app is built and deployed to Cloud Run, and a smoke test checks that the service carries the commit's `git-sha` label and answers HTTP 200. Docs-only or tests-only pushes don't deploy. To deploy by hand: Actions tab > "Deploy to Cloud Run" > Run workflow (from `main`). `./deploy.sh` still works; keep its flags in sync with the workflow.
+
+There are no stored keys. The workflow logs in through **Workload Identity Federation**: pool `tuneteller`, provider `github-oidc` in project `tuneteller-app`, which only accepts `AnttiRask/TuneTeller` on `refs/heads/main`. It then acts as the service account `tuneteller-deploy`, which can deploy only the `tuneteller-app` service (see `tuneteller-refactor-plan.md` §5.2 for its exact permissions). The service itself runs as `tuneteller-runtime`, which can read only its three secrets.
+
+The workflow doesn't pass `--allow-unauthenticated` (the service is already public and the deploy account may not change IAM). If you ever need to make the service public again, do it yourself with your own account.

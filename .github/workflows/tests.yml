@@ -1,0 +1,44 @@
+name: Tests
+
+# Runs the testthat suite: mocked HTTP, no API keys, no Google Cloud. Runs on
+# pull requests, on pushes that change the tests, on demand, and as the first
+# job of the deploy workflow (which only deploys if these pass).
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "tests/**"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+        with:
+          r-version: "4.5"
+
+      # --vanilla keeps the project's .Rprofile (renv) out of it, so the packages
+      # come from Posit's binary repository, not from renv.lock
+      - name: Install packages
+        run: |
+          Rscript --vanilla -e 'install.packages(
+            c("bslib", "httr2", "jsonlite", "later", "promises", "purrr", "shiny",
+              "shinycssloaders", "stringr", "testthat", "withr"),
+            repos = "https://packagemanager.posit.co/cran/__linux__/noble/latest")'
+
+      - name: Run tests
+        run: |
+          Rscript --vanilla -e 'testthat::test_dir("tests/testthat", reporter = "summary", stop_on_failure = TRUE)'

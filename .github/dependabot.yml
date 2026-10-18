@@ -1,0 +1,19 @@
+# Dependabot proposes updates for what it can see in this repo: the pinned
+# GitHub Actions in the deploy workflow and the Docker base image. (It does not
+# support renv, so R package updates are done by hand with renv::update().)
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "docker"
