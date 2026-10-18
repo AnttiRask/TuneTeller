@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TuneTeller is an R/Shiny web app that recommends music artists via OpenAI (GPT-4o-mini) and Spotify API. Users describe music they want in natural language, OpenAI suggests an artist, and Spotify provides artist details (image, followers, profile link).
+TuneTeller is an R/Shiny web app that recommends music artists via OpenAI (GPT-5.4 nano) and Spotify API. Users describe music they want in natural language, OpenAI suggests an artist, and Spotify provides artist details (image, followers, profile link).
 
 ## Development Commands
 
@@ -14,6 +14,9 @@ R -e "renv::restore()"
 
 # Run locally (requires env vars set)
 R -e 'shiny::runApp("app/")'
+
+# Run the tests (mocked HTTP, no keys needed)
+Rscript -e 'testthat::test_dir("tests/testthat")'
 
 # Run with Docker (reads .env file)
 docker compose up --build        # first time / after changes
@@ -30,20 +33,30 @@ Copy `.env.example` to `.env` and fill in: `OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`
 
 ## Architecture
 
-The app follows a standard Shiny `ui.R`/`server.R` split:
+The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loading libraries and sourcing `app/www/*.R`:
 
-- **`app/run.R`** - Entry point; starts the Shiny server on `$PORT` (default 8080)
-- **`app/ui.R`** - UI definition using `bslib::page_fluid` with Bootstrap 5 dark theme. Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps (BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller)
-- **`app/server.R`** - Server logic with two main reactive flows:
-  1. `observeEvent(input$go)` sends the user's prompt to OpenAI's `/v1/responses` endpoint, parses the response to extract artist name and description, and caches the result in `recommendation_cache` reactiveVal
-  2. `artist_details()` reactive takes the cached recommendation, searches Spotify via `search_spotify_artist()` (`app/www/spotify.R`, `httr2`), and returns artist metadata (image, followers, Spotify URL)
-- **`app/www/prompt_versions.R`** - OpenAI prompt templates using `stringr::str_glue` interpolation (currently uses `prompt_ver2`)
-- **`app/www/styles.css`** - Custom dark theme CSS; brand color is `#C1272D`, Spotify green is `#1DB954`, background is `#191414`
+- **`app/run.R`** - Entry point; sets the working directory to `app/`, wraps the app's page handler with the security headers and starts the server on `$PORT` (default 8080)
+- **`app/global.R`** - Libraries, then sources `variables.R`, `strings.R`, `prompt_versions.R`, `functions.R`, `api.R`
+- **`app/ui.R`** - `bslib::page_fluid` with Bootstrap 5, dark by default and a light/dark switch (`input_dark_mode`). Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps; its links come from `footer_apps` in `variables.R`
+- **`app/server.R`** - Reactive logic only: `recommendation_result` (an `eventReactive` on `input$go`) cleans the prompt, enforces the 10 s cooldown, calls `get_recommendation()` then `find_artist()` and returns a state list (`ok` / `no_artist` / `error`) that `artist_card_ui()` renders. The spinner covers the whole request because the card output depends on it
+- **`app/www/variables.R`** - Model name, limits (190 characters, 10 s cooldown, timeouts), brand colours, footer links
+- **`app/www/strings.R`** - All user-facing text
+- **`app/www/prompt_versions.R`** - Prompt versions; `prompt_ver3` (instructions + JSON schema) is current
+- **`app/www/api.R`** - OpenAI (`/v1/responses`, JSON-schema output) and Spotify (client credentials, `httr2`). `get_recommendation()` and `find_artist()` never throw; they return `list(status, data)`
+- **`app/www/functions.R`** - Pure helpers: `clean_prompt()`, `parse_recommendation()`, `theme_css()`, `artist_card_ui()`
+- **`app/www/security.R`** - Security headers and `with_security_headers()`
+- **`app/www/cooldown.js`** - Disables the button and shows the seconds left, driven by the server
+- **`app/www/styles.css`** - Custom styles; colours come from CSS custom properties injected by `theme_css()`; brand color is `#C1272D`, Spotify green is `#1DB954`, dark background is `#191414`
+- **`tests/testthat/`** - Tests with mocked HTTP (`httr2::local_mocked_responses()`); `helper-app.R` loads the app code
 
 ## Key Conventions
 
-- R code uses Tidyverse syntax and packages (dplyr, purrr, stringr)
-- HTTP requests use `httr2` (not httr)
+- R code uses Tidyverse syntax and packages (purrr, stringr); the existing files use `%>%`, so match that
+- HTTP requests use `httr2` (not httr); Spotify is called directly, not through `spotifyr` (its 2.2.5 sends the token in the URL, which Spotify rejects with 401)
+- Config goes in `variables.R`, user-facing text in `strings.R`; the OpenAI model is `openai_model` there (GPT-4o mini retires 2027-01-14)
+- The model answers in JSON (schema in `prompt_versions.R`); nothing is parsed out of free text
+- User text is cleaned (`clean_prompt()`) and fenced in `<request>` tags; everything from the model and Spotify is escaped by Shiny's tags, and only https links are used
+- Never log prompts, keys or response bodies
 - Package management via `renv` - update `renv.lock` when adding/removing packages
 - Dockerfile must copy `.Rprofile`, `renv/activate.R`, and `renv/settings.json` before `renv::restore()`
 - The footer in `ui.R` is standardized across apps - keep format consistent when modifying

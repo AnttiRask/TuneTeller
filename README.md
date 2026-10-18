@@ -4,12 +4,13 @@
 
 ## 🔍 Features
 
-- 🤖 Natural language music recommendations powered by OpenAI (GPT-4o-mini)
+- 🤖 Natural language music recommendations powered by OpenAI (GPT-5.4 nano)
 - 🎧 Artist details fetched from Spotify API (image, followers, profile link)
 - ✍️ Simple text prompt interface (190 character limit)
-- 🎨 Clean, dark-themed UI with Spotify-inspired styling
+- 🎨 Clean UI with Spotify-inspired styling: dark by default, with a light mode switch
 - 🔗 Direct link to artist's Spotify profile
 - ⚡ Loading spinner while fetching recommendations
+- 🛡️ Friendly messages instead of errors, a short wait between recommendations, security headers
 
 ## 📸 Screenshot
 
@@ -24,14 +25,22 @@
 ```
 TuneTeller/
 ├── app/
-│   ├── run.R                    # App entry point
-│   ├── server.R                 # Server logic (OpenAI + Spotify API calls)
-│   ├── ui.R                     # UI definition
+│   ├── run.R                    # App entry point (adds the security headers)
+│   ├── global.R                 # Libraries; sources the files in www/
+│   ├── ui.R                     # UI definition and the shared footer
+│   ├── server.R                 # Reactive logic
 │   └── www/
+│       ├── variables.R          # Model, limits, brand colours, footer links
+│       ├── strings.R            # All user-facing text
+│       ├── prompt_versions.R    # OpenAI prompt versions
+│       ├── api.R                # OpenAI and Spotify calls (never throw)
+│       ├── functions.R          # Pure helpers (cleaning, parsing, the artist card)
+│       ├── security.R           # Security headers
+│       ├── cooldown.js          # Disables the button during the cooldown
 │       ├── favicon.png          # Browser tab icon
 │       ├── placeholder_image.png # Default image before recommendation
-│       ├── prompt_versions.R    # OpenAI prompt templates
-│       └── styles.css           # Custom dark theme styles
+│       └── styles.css           # Custom styles (dark and light mode)
+├── tests/testthat/              # Tests (mocked HTTP, no live API calls)
 ├── deploy.sh                    # Google Cloud Run deployment script
 ├── Dockerfile                   # Container image definition
 ├── docker-compose.yml           # Local development setup
@@ -43,9 +52,9 @@ TuneTeller/
 ## 🔄 How It Works
 
 1. **User Input**: You describe the music you want in a text prompt (up to 190 characters).
-2. **OpenAI Processing**: The prompt is sent to GPT-4o-mini, which interprets your request and suggests an artist.
+2. **OpenAI Processing**: The prompt is sent to GPT-5.4 nano, which interprets your request and answers in JSON with an artist, a description and a reason. Your text is passed as data, never as instructions, and OpenAI is asked not to store it.
 3. **Spotify Lookup**: The recommended artist is searched on Spotify to fetch their profile image, follower count, and profile URL.
-4. **Display**: The artist card is rendered with all details and a direct link to their Spotify page.
+4. **Display**: The artist card is rendered with all details and a direct link to their Spotify page. If something fails, you get a plain message and can try again after a few seconds.
 
 ## 🔐 API Keys Required
 
@@ -72,6 +81,9 @@ Sys.setenv(SPOTIFY_CLIENT_SECRET = "your-client-secret")
 
 # Run app locally
 shiny::runApp("app/")
+
+# Run the tests (no API keys needed)
+testthat::test_dir("tests/testthat")
 ```
 
 ## 🔐 Deployment
@@ -80,14 +92,14 @@ Deployed to Google Cloud Run. See `deploy.sh` and `DEPLOY.md` for details.
 
 ## 📦 Required R Packages
 
-- [dplyr](https://dplyr.tidyverse.org/) - Data manipulation
-- [httr2](https://httr2.r-lib.org/) - HTTP requests to OpenAI API
+- [bslib](https://rstudio.github.io/bslib/) - Bootstrap 5 theming and the light/dark switch
+- [httr2](https://httr2.r-lib.org/) - HTTP requests to the OpenAI and Spotify APIs
 - [jsonlite](https://github.com/jeroen/jsonlite) - JSON parsing
 - [purrr](https://purrr.tidyverse.org/) - Functional programming helpers
 - [shiny](https://shiny.posit.co/) - Web application framework
-- [shinyBS](https://ebailey78.github.io/shinyBS/) - Bootstrap components
 - [shinycssloaders](https://daattali.com/shiny/shinycssloaders-demo/) - Loading spinners
 - [stringr](https://stringr.tidyverse.org/) - String manipulation
+- [testthat](https://testthat.r-lib.org/) - Tests (development only)
 
 ## 🎨 Tech Stack
 
@@ -95,9 +107,9 @@ Deployed to Google Cloud Run. See `deploy.sh` and `DEPLOY.md` for details.
 |-----------|------------|
 | Language | R |
 | Framework | Shiny |
-| AI | OpenAI GPT-4o-mini |
+| AI | OpenAI GPT-5.4 nano |
 | Music Data | Spotify Web API |
-| Styling | Custom CSS (dark theme) |
+| Styling | bslib + custom CSS (dark by default, light mode) |
 | Deployment | Google Cloud Run |
 
 ## 📄 License
