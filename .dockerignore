@@ -1,40 +1,14 @@
-# Git
-.git
-.gitignore
+# Allowlist: only what the image needs. Everything else (secrets, tests, docs,
+# the git history, local renv libraries) stays out by default.
+*
+!app
+!renv.lock
+!.Rprofile
+!renv/activate.R
+!renv/settings.json
 
-# Environment files (contain secrets)
-.env
-.Renviron
-secret.R
-
-# R artifacts
-.Rhistory
-.RData
-.Rproj.user/
-
-# renv cache (will be restored from lock file)
-renv/library/
-renv/staging/
-renv/python/
-
-# IDE
-.vscode/
-.idea/
-
-# Documentation
-*.md
-!README.md
-
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# Deployment
-deploy.sh
-
-# Misc
-*.log
-*.tmp
-img/
-docs/
+# ...and never, even inside allowed folders
+**/.Renviron
+**/secret.R
+**/.env
+**/app_cache

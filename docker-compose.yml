@@ -1,15 +1,17 @@
+# Local run of the production image:  docker compose up --build
+# then open http://localhost:8081
 services:
   shiny-app:
     build: .
     ports:
       - "8081:8080"
+    # Keys come from the git-ignored .env; they are not copied into the image
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
       - PORT=8080
-      - SHINY_ENV=development
     volumes:
-      # Mount for development - allows live code changes
-      - ./app:/srv/shiny-server/app/app
+      # Live code changes without rebuilding (restart the container to reload)
+      - ./app:/app/app
     restart: unless-stopped
