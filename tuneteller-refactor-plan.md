@@ -4,17 +4,28 @@
 >
 > **For Claude Code:** read this whole file first. Every change is checked with the user before it is committed, pushed or deployed. Phase 1 is app code only; Phase 2 touches cloud resources and each step needs approval. Never print secrets (see §8).
 
-*Written: 2026-10-18.*
+*Written 2026-10-18; last updated the same day, after the fixes in the sibling apps. Phase 1 and Phase 2 are done and live. §10 lists what is left.*
 
 ---
 
 ## 0. Status at a glance
 
-| # | Item | Status |
+Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app` in project `tuneteller-app` (revision `tuneteller-app-00023-294`, commit `a331bf0a21f6`, 100 % of traffic).
+
+| # | What | Status |
 |---|---|---|
-| 0 | Fix: `spotifyr` sent the token in the URL, Spotify answered 401 (replaced by `httr2`, `app/www/spotify.R`, `4f3b123`) | **Done, live** (revision `tuneteller-app-00011-zpc`) |
-| 1 | Phase 1: app code (structure, robustness, model switch, tests, security headers, light mode, footer, dependencies) | **Done, live** (commits `f4d57dc`, `7cd7ca3`, `5b63e98`; revision `tuneteller-app-00012-f64`, 100 % of traffic). Verified: 166 test expectations; the production image built from the lock (R 4.5.0, shiny 1.10.0, bslib 0.9.0) and checked in Chrome; the live site with a real prompt, logs clean |
-| 2 | Phase 2: infrastructure. Decided: **stay in `tuneteller-app`**, new WIF pool, order below. Done so far: (a) the two stray failed services in `tuneteller-app` deleted (real BiblioStatus and Gallery services verified healthy first); (b) `tuneteller-runtime` service account with `secretAccessor` on the 3 secrets only, and the service switched to it (revision `tuneteller-app-00013-hqz`, verified with a real prompt, logs clean). (c) `roles/editor` removed from the compute account (it keeps `cloudbuild.builds.builder`); a test deploy afterwards built fine (Cloud Build SUCCESS, revision `tuneteller-app-00014-4kv`, still `tuneteller-runtime`, logs clean). (d) WIF pool `tuneteller` + provider `github-oidc` (only `AnttiRask/TuneTeller` on `refs/heads/main`) and the `tuneteller-deploy` account, **tested by a real source deploy and by negative tests** (§5.2); (e) websocket fix deployed (timeout 3600 and session affinity are what matter; `session$allowReconnect(TRUE)` was added too but has no effect, see §6; revision `tuneteller-app-00016-glg`); (f) light/dark switch replaced (own button). (g) GitHub Actions workflows (tests, then keyless deploy + smoke test; Dependabot) built and verified by a real run (`39146179058`, revision `tuneteller-app-00018-rp9`); (h) complete `renv.lock` (41 packages, R 4.6.1, shiny 1.14.0, bslib 0.12.0) + `rocker/r-ver:4.6.1` non-root Dockerfile + allowlist `.dockerignore` (image 1.85 GB vs ~3 GB; verified locally: runs as `tuneteller`, only `app`, `renv`, `renv.lock`, `.Rprofile` inside, real recommendation in Chrome). (i) the new image deployed by the push-triggered workflow (revision `00019-j79`, verified live with a real prompt); (j) repo hygiene applied and read back, same as FillariStatus: secret scanning, push protection, Dependabot security updates, `main` protected (no force-push, no deletion, enforced for admins, no required reviews or checks); (k) Artifact Registry cleanup policy (keep the 5 newest versions, delete the rest; the live image is always the newest) and a 30-day lifecycle rule on the two build buckets; (l) the three Dependabot PRs merged one at a time, each followed by a deploy run and a check of the live revision: `auth` 2 → 3 (`00020-26l`), `setup-gcloud` 2 → 3 (`00021-bsp`), `checkout` 4 → 7 (`00022-64f`). **Phase 2 is done** except: confirm the registry cleanup has run (18 versions on 2026-10-18; expect 5 after Google's daily run); the websocket fix for TrackTeller and Gallery of the Day (the user will come back to it).
+| 0 | `spotifyr` sent the token in the URL and Spotify answered 401; replaced by `httr2` | **Done, live** (`4f3b123`) |
+| 1 | Phase 1, app code: structure, never-throwing API layer, gpt-5.4-nano with JSON output, 10 s cooldown, security headers, light mode, FillariStatus in the footer, tests | **Done, live** (`f4d57dc`, `7cd7ca3`, `5b63e98`); 166 test expectations |
+| 2a | Dedicated runtime account `tuneteller-runtime` (3 secrets only); `roles/editor` removed from the compute account | **Done, live**; builds verified afterwards |
+| 2b | Keyless deploys: WIF pool `tuneteller`, provider `github-oidc` (this repo, `main` only), account `tuneteller-deploy` (§5.2) | **Done**; tested by impersonation, negative tests, and real workflow runs |
+| 2c | GitHub Actions: tests, then deploy + smoke test (checks the `git-sha` label); Dependabot | **Done, live** (first push-triggered run `39149036071`) |
+| 2d | Complete `renv.lock` (41 packages, R 4.6.1), `rocker/r-ver:4.6.1` non-root image (1.85 GB), allowlist `.dockerignore` | **Done, live** (revision `00019-j79`) |
+| 2e | Repo hygiene: secret scanning, push protection, Dependabot security updates, `main` protected (no force-push or deletion, enforced for admins) | **Done**, read back |
+| 2f | Cleanup: Artifact Registry keeps the 5 newest versions; 30-day lifecycle on the two build buckets; two stray failed services deleted | **Applied**; the registry cleanup has **not run yet** (19 versions on 2026-10-18), see §10 |
+| 2g | Three Dependabot PRs (`auth` 3, `setup-gcloud` 3, `checkout` 7) merged one at a time, each followed by a deploy and a check | **Done** (`00020`-`00022`) |
+| 2h | Websocket: `--timeout 3600` and `--session-affinity` | **Done, live**. `session$allowReconnect(TRUE)` was added too but **does nothing** on Cloud Run (§6) |
+
+Related work in the sibling apps, done in the same session: the light/dark switch now shows the mode a click switches to in TuneTeller and FillariStatus (own button instead of bslib's, which can't be restyled); `allowReconnect("force")` in FillariStatus and BiblioStatus, plus a fix in BiblioStatus that restores the committed filters after a reconnect (details in their `CLAUDE.md` files).
 
 ## 1. Why
 
@@ -126,7 +137,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 
 **Recommendation: stay.** Nothing the user asked for needs the move, and the move adds an outage window and a clean-up job. Isolation also argues for staying, because the shared `github-deploy` account in `bibliostatus-app` is broad. Either way a **new** pool is created, as requested.
 
-**Decision pending from the user:** stay or move.
+**Decided by the user (2026-10-18): stay.** A new pool was created, as requested.
 
 ### 5.2 Identity and deploy (built and tested 2026-10-18)
 
@@ -140,9 +151,9 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - **Negative tests (all denied):** read a secret value, list secrets, change the service's IAM (public/private), grant itself a role, list service accounts, read the Cloud Build bucket, create another Cloud Run service. **Known and accepted:** `run.developer` includes `run.services.delete` on that one service. Someone who can run this account can already deploy arbitrary code (a bigger lever), so the real boundary is the repo's `main` branch (consider requiring pull requests / protecting `main`).
 - Deploy command for the workflow (note: no `--allow-unauthenticated`, which needs IAM rights; the service is already public):
   `gcloud run deploy tuneteller-app --source . --project tuneteller-app --region europe-north1 --platform managed --service-account tuneteller-runtime@tuneteller-app.iam.gserviceaccount.com --set-secrets OPENAI_API_KEY=openai-api-key:latest --set-secrets SPOTIFY_CLIENT_ID=spotify-client-id:latest --set-secrets SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest --memory 1Gi --timeout 3600 --session-affinity --quiet`
-- Still to do: the workflow itself (pushes touching `app/**` or the build files: tests, then build + deploy + smoke test; actions pinned to SHAs; serialised runs; `GCP_PROJECT_ID` repo secret), which also tests the real GitHub-to-Google token exchange (impersonation only tested the permissions); `dependabot.yml`; repository hygiene (secret scanning, push protection, protected `main`).
+- Done afterwards: the workflows (`.github/workflows/tests.yml`, `deploy_shiny_app.yml`), `dependabot.yml` and the repository hygiene settings; the real GitHub-to-Google token exchange was proved by workflow run `39146179058` (impersonation had only tested the permissions). No GitHub secret is used: the project id and number are in the workflow's `env`.
 
-### 5.3 Image and docs (done 2026-10-18, deploy pending)
+### 5.3 Image and docs (done and deployed 2026-10-18)
 
 - **Dockerfile:** `rocker/r-ver:4.6.1` (not `rocker/shiny`), system libraries from Posit's sysreqs API for the dependency closure (`cmake make libcurl4-openssl-dev libicu-dev libssl-dev libuv1-dev zlib1g-dev`), `renv::restore()` from Posit's Linux binaries (nothing compiled), renv cache and sandbox disabled, non-root user `tuneteller`, `CMD Rscript app/run.R` (`SHINY_ENV` was unused and is gone). Same design as FillariStatus.
 - **`.dockerignore`:** an allowlist (`app`, `renv.lock`, `.Rprofile`, `renv/activate.R`, `renv/settings.json`), plus never `.Renviron`, `secret.R`, `.env`, `app_cache`. Checked inside the running image.
@@ -150,7 +161,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - **Regenerating `renv.lock`** (needed when the app uses a new package): the old lock was incomplete and a lock made on a laptop can contain broken installs, so generate it in the target image. Install the direct packages (`bslib httr2 jsonlite purrr shiny shinycssloaders stringr`) into a clean library inside `rocker/r-ver:4.6.1` with the Posit Linux binary repo and a `HTTPUserAgent` naming the platform (otherwise Posit serves source and `sass` compiles for minutes), install `renv` 1.0.11 (the version `renv/activate.R` pins) from the CRAN archive, then `renv::snapshot(library = <clean lib>, packages = c(<direct>, "renv"), lockfile = ..., force = TRUE)`, and `docker cp` the file out. **Check** that every `Requirements` entry in the lock is itself in the lock (a laptop run silently dropped `stringi` and `vctrs`, which failed to compile).
 - **Docker Desktop (Rancher) can't bind-mount `/tmp`:** use `docker cp`, or mount from under the home directory.
 - **zsh doesn't word-split unquoted variables:** building a URL with a `for p in $PKGS` loop silently sent one giant `pkgname`; build such requests in Python.
-- Still to do: Artifact Registry cleanup policy (images and source tarballs pile up), repository hygiene, and the user's go on the other two apps.
+- Done afterwards: the Artifact Registry cleanup policy, the bucket lifecycle rules and the repository hygiene (§0, row 2e and 2f). The user's go on the other two apps is still open (§10).
 
 ## 6. Gotchas carried over from FillariStatus (relevant here)
 - **Cloud Run `--timeout` caps the Shiny websocket too.** At the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server"), which looks like the app "going to sleep". BiblioStatus fixed it on 2026-09-17 (`1d564aa`): `--timeout 3600`, `--session-affinity` and `session$allowReconnect(TRUE)`. **Only the timeout does anything:** `allowReconnect(TRUE)` is inert on Cloud Run (the client reconnects only if the host, such as Shiny Server or Posit Connect, allows it too; checked by closing the socket in the browser, locally and on the live TuneTeller: the page stays greyed out). `allowReconnect("force")` does reconnect (a new session, inputs re-sent; about 1.5 s, tested on FillariStatus and BiblioStatus, which now use it), but it is unsafe for TuneTeller: the re-sent "Get Recommendation" click count would run `recommendation_result` again and make a paid OpenAI call. Make that observer idempotent before ever using `"force"` here; until then a page open for over an hour greys out until reloaded. TuneTeller, TrackTeller and Gallery of the Day had 300 s; TuneTeller got the fix on 2026-10-18. There is still no minimum instance anywhere, so the first visit after idle has a cold start of ~3 s.
@@ -193,3 +204,32 @@ Prompt `prompt_ver2`, 3 prompts per model, `max_output_tokens` 2000, reasoning o
 | gpt-5.4-mini | 1.3–1.5 s | 0/3 | ~69 / ~69 |
 
 Prices (secondary sources, not verified on OpenAI's page): gpt-5.4-nano US$0.20 in / US$1.25 out per 1M tokens; gpt-5.4-mini US$0.75 / US$4.50; Claude Haiku 5.5 US$0.10 / US$0.50. Not yet measured: JSON-schema reliability and quality of the artist picks.
+
+## 10. What is left (2026-10-18)
+
+Nothing in the plan is blocking: Phase 1 and Phase 2 are done and live. What remains is one check that has to wait, three decisions that are the user's, and optional polish.
+
+### To check later
+- **Artifact Registry cleanup.** The policy (keep the 5 newest versions, delete the rest) is stored and is not a dry run, but Google evaluates cleanup policies about once a day. On 2026-10-18 there were 19 versions. Expect about 5 (plus any new deploys) by 2026-10-20; if not, read the policy back (`gcloud artifacts repositories describe cloud-run-source-deploy --project tuneteller-app --location europe-north1`) and check the repository's audit logs. The live image is always the newest, so it is never at risk.
+
+### Waiting for the user
+1. **TrackTeller and Gallery of the Day websocket fix.** Both still run with `--timeout 300` and no session affinity, so their pages grey out after 5 minutes. Fix: `--timeout 3600 --session-affinity` in their `deploy.sh` and on the running services. Not done because the permission classifier blocked my edit of another app's deploy script (the user will come back to it). `session$allowReconnect(TRUE)` is pointless there (§6); `"force"` is only safe after reading each app's server for non-idempotent actions behind an input (TrackTeller calls the Spotify API; check that a reconnect, which re-sends the inputs, can't repeat something paid or harmful).
+2. **Cost exposure.** The 10 s cooldown is per session, so a script that opens many sessions can still make many OpenAI calls (each costs a fraction of a cent, and `--max-instances 20` is generous). Suggested: set a monthly usage limit in the OpenAI dashboard (the user's action; I can't), lower `--max-instances` (BiblioStatus and FillariStatus use 3) in `deploy.sh` and the workflow, and confirm that the EUR 30/month billing budget on the shared billing account covers this project (I could not read budgets: the API isn't enabled in `tuneteller-app`, and I didn't enable it).
+3. **Cold start.** `min-instances` is 0 everywhere, so the first visit after idle takes about 3 s. `--min-instances 1` removes it for a small recurring cost; not applied.
+
+### Optional
+- **Recommendation quality.** gpt-5.4-nano's picks looked good in testing; one looked off (a Finnish band for "90s britpop"). If it disappoints, `openai_model` in `www/variables.R` is a one-line change to gpt-5.4-mini; compare the two on ~10 prompts first (§9).
+- **Enforce the CSP.** The full policy is report-only. After real use in both colour modes with no violations (Spotify's image hosts `i.scdn.co` and `*.spotifycdn.com`, the font host), promote it in `www/security.R`. The Chrome console tool doesn't show report-only violations: use a `securitypolicyviolation` listener (§6).
+- **A page open for over an hour still greys out** (3600 s is Cloud Run's maximum and `allowReconnect(TRUE)` does nothing). Using `"force"` needs `recommendation_result` to be idempotent first: the re-sent "Get Recommendation" click count would otherwise repeat the paid call. One way: send the click to the server as a `priority: "event"` input, which the browser doesn't re-send. Probably not worth it for short sessions.
+- **README screenshot** (`img/screenshot.png`) and the `docs/` page show the old UI (no light mode, no switch).
+- **Spotify button contrast.** White text on `#1DB954` is about 2.2:1. Pre-existing.
+- **`app/www/darken_lighten_youcanbeapirate_colors.txt`** is served publicly from `www/`. Harmless palette notes, but it doesn't belong there.
+- **CI vs production package versions.** `tests.yml` installs the newest packages from Posit; the image uses `renv.lock`. They can drift. Restoring from the lock in CI would match production at the cost of a slower run.
+- **R package updates are manual** (Dependabot doesn't cover renv). Regenerate `renv.lock` inside the image as described in §5.3 when an update or a new package is needed.
+
+### Known and accepted
+- Only desktop Chrome was driven. **Phones, Safari and Firefox were never checked**, including the new light/dark button and the cooldown countdown.
+- `run.developer` lets the deploy account delete the one service (§5.2); the real boundary is the repo's `main` branch.
+- The branch-protection enforcement was read back but never exercised (testing it would mean rewriting `main`).
+- Cloud Build still runs as the default compute account, which keeps `cloudbuild.builds.builder`.
+- Spotify's search fuzzy-matches nonsense names to some artist.
