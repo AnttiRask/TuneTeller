@@ -11,23 +11,38 @@ test_that("the header set covers framing, referrers, permissions, transport and 
   expect_match(h[["Permissions-Policy"]], "camera=()", fixed = TRUE)
 })
 
-test_that("the enforced CSP only contains directives that can't break the app", {
-  csp <- security_headers()[["Content-Security-Policy"]]
-  expect_match(csp, "frame-ancestors 'none'", fixed = TRUE)
-  expect_match(csp, "object-src 'none'", fixed = TRUE)
-  # no resource-loading directives in the enforced policy
-  expect_false(grepl("script-src|style-src|img-src|connect-src|default-src", csp))
+test_that("the CSP is enforced, not report-only", {
+  h <- security_headers()
+  expect_true("Content-Security-Policy" %in% names(h))
+  expect_false("Content-Security-Policy-Report-Only" %in% names(h))
 })
 
-test_that("the report-only CSP allows exactly the hosts the app uses", {
-  csp <- security_headers()[["Content-Security-Policy-Report-Only"]]
-  expect_match(csp, "img-src [^;]*https://i\\.scdn\\.co")
+test_that("the CSP blocks everything by default and keeps the anti-framing directives", {
+  csp <- security_headers()[["Content-Security-Policy"]]
+  expect_match(csp, "default-src 'self'", fixed = TRUE)
+  expect_match(csp, "frame-ancestors 'none'", fixed = TRUE)
+  expect_match(csp, "object-src 'none'", fixed = TRUE)
+  expect_match(csp, "base-uri 'self'", fixed = TRUE)
+  expect_match(csp, "form-action 'self'", fixed = TRUE)
+})
+
+test_that("the CSP allows exactly the hosts the app uses", {
+  csp <- security_headers()[["Content-Security-Policy"]]
+  # Spotify's image CDNs (artist pictures), including hosts other than i.scdn.co
+  expect_match(csp, "img-src [^;]*https://\\*\\.scdn\\.co")
   expect_match(csp, "img-src [^;]*https://\\*\\.spotifycdn\\.com")
   expect_match(csp, "font-src [^;]*https://fonts\\.cdnfonts\\.com")
   expect_match(csp, "style-src [^;]*https://fonts\\.cdnfonts\\.com")
   expect_match(csp, "connect-src 'self' wss:", fixed = TRUE)
-  # nothing is allowed from arbitrary hosts
-  expect_false(grepl("\\*(;| |$)|https:(;| |$)", csp))
+  # nothing is allowed from arbitrary hosts: no bare * and no bare https:
+  expect_false(grepl("(^|[; ])\\*([; ]|$)|https:(;| |$)", csp))
+})
+
+test_that("the CSP doesn't allow eval, and only allows inline script and style", {
+  csp <- security_headers()[["Content-Security-Policy"]]
+  expect_false(grepl("unsafe-eval", csp, fixed = TRUE))
+  expect_match(csp, "script-src 'self' 'unsafe-inline'(;|$)")
+  expect_match(csp, "style-src 'self' 'unsafe-inline' https://fonts\\.cdnfonts\\.com")
 })
 
 fake_app <- function(handler) structure(list(httpHandler = handler), class = "shiny.appobj")

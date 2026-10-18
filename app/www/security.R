@@ -5,27 +5,19 @@
 ## assets are served by other handlers and don't need these headers.
 
 # Hosts the page legitimately loads things from. Artist images come from
-# Spotify's image CDNs.
-image_hosts <- c("https://i.scdn.co", "https://*.spotifycdn.com")
+# Spotify's image CDNs (i.scdn.co today; the wildcards cover the other
+# scdn.co / spotifycdn.com hosts it uses, so a picture can't be blocked).
+image_hosts <- c("https://*.scdn.co", "https://*.spotifycdn.com")
 font_host <- "https://fonts.cdnfonts.com"
 
-# Enforced: things that can't break the app. frame-ancestors is the modern
-# clickjacking protection (X-Frame-Options below is the fallback).
-csp_enforced <- paste(
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "form-action 'self'",
-    sep = "; "
-)
-
-# Report-only: the full policy. Violations show up in the browser console
-# ("[Report Only] Refused to ...") without blocking anything, so it can be
-# tightened safely. Shiny and bslib use inline scripts/styles, hence
-# 'unsafe-inline'; wss: is the Shiny websocket.
-csp_report_only <- paste(
+# The policy, enforced. Shiny and bslib use inline scripts and styles, hence
+# 'unsafe-inline'; wss: is the Shiny websocket. 'unsafe-eval' is not allowed:
+# nothing in the app needs it (checked in the browser in both colour modes).
+# frame-ancestors is the modern clickjacking protection (X-Frame-Options below
+# is the fallback).
+csp <- paste(
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline'",
     paste("style-src 'self' 'unsafe-inline'", font_host),
     paste("font-src 'self' data:", font_host),
     paste("img-src 'self' data: blob:", paste(image_hosts, collapse = " ")),
@@ -39,15 +31,14 @@ csp_report_only <- paste(
 
 security_headers <- function() {
     list(
-        "Content-Security-Policy"             = csp_enforced,
-        "Content-Security-Policy-Report-Only" = csp_report_only,
-        "X-Frame-Options"                     = "DENY",
-        "X-Content-Type-Options"              = "nosniff",
-        "Referrer-Policy"                     = "strict-origin-when-cross-origin",
+        "Content-Security-Policy"   = csp,
+        "X-Frame-Options"           = "DENY",
+        "X-Content-Type-Options"    = "nosniff",
+        "Referrer-Policy"           = "strict-origin-when-cross-origin",
         # The app needs no device features
-        "Permissions-Policy"                  = "geolocation=(), camera=(), microphone=(), payment=(), usb=()",
+        "Permissions-Policy"        = "geolocation=(), camera=(), microphone=(), payment=(), usb=()",
         # Cloud Run only serves HTTPS; one year, no subdomains, no preload
-        "Strict-Transport-Security"           = "max-age=31536000"
+        "Strict-Transport-Security" = "max-age=31536000"
     )
 }
 
