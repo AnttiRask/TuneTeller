@@ -60,6 +60,7 @@ The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loadin
 - Never log prompts, keys or response bodies
 - Package management via `renv` - update `renv.lock` when adding/removing packages
 - Dockerfile must copy `.Rprofile`, `renv/activate.R`, and `renv/settings.json` before `renv::restore()`
+- The image is `rocker/r-ver:4.6.1`, runs as a non-root user, and `.dockerignore` is an allowlist. `renv.lock` must be complete (every requirement present): regenerate it inside the image as described in `tuneteller-refactor-plan.md` 5.3, not on a laptop
 - The footer in `ui.R` is standardized across apps - keep format consistent when modifying
 
 ## Deployment
