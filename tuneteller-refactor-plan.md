@@ -10,21 +10,21 @@
 
 ## 0. Status at a glance
 
-Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app` in project `tuneteller-app` (revision `tuneteller-app-00023-294`, commit `a331bf0a21f6`, 100 % of traffic).
+Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app` in project `tuneteller-app` (revision `tuneteller-app-00024-2x5`, commit `8a477280898a`, 100 % of traffic, `--max-instances 3`).
 
 | # | What | Status |
 |---|---|---|
 | 0 | `spotifyr` sent the token in the URL and Spotify answered 401; replaced by `httr2` | **Done, live** (`4f3b123`) |
-| 1 | Phase 1, app code: structure, never-throwing API layer, gpt-5.4-nano with JSON output, 10 s cooldown, security headers, light mode, FillariStatus in the footer, tests | **Done, live** (`f4d57dc`, `7cd7ca3`, `5b63e98`); 166 test expectations |
+| 1 | Phase 1, app code: structure, never-throwing API layer, gpt-5.4-nano with JSON output, 10 s cooldown, security headers, light mode, FillariStatus in the footer, tests | **Done, live** (`f4d57dc`, `7cd7ca3`, `5b63e98`); 166 test expectations then, 189 now (api 30, functions 70, security 31, server 26, ui 32) |
 | 2a | Dedicated runtime account `tuneteller-runtime` (3 secrets only); `roles/editor` removed from the compute account | **Done, live**; builds verified afterwards |
 | 2b | Keyless deploys: WIF pool `tuneteller`, provider `github-oidc` (this repo, `main` only), account `tuneteller-deploy` (§5.2) | **Done**; tested by impersonation, negative tests, and real workflow runs |
 | 2c | GitHub Actions: tests, then deploy + smoke test (checks the `git-sha` label); Dependabot | **Done, live** (first push-triggered run `39149036071`) |
 | 2d | Complete `renv.lock` (41 packages, R 4.6.1), `rocker/r-ver:4.6.1` non-root image (1.85 GB), allowlist `.dockerignore` | **Done, live** (revision `00019-j79`) |
 | 2e | Repo hygiene: secret scanning, push protection, Dependabot security updates, `main` protected (no force-push or deletion, enforced for admins) | **Done**, read back |
-| 2f | Cleanup: Artifact Registry keeps the 5 newest versions; 30-day lifecycle on the two build buckets; two stray failed services deleted | **Applied**; the registry cleanup has **not run yet** (19 versions on 2026-10-18), see §10 |
+| 2f | Cleanup: Artifact Registry keeps the 5 newest versions; 30-day lifecycle on the two build buckets; two stray failed services deleted | **Applied**; the registry cleanup has **not run yet** (still 20 versions on 2026-10-18 after the last deploy), see §10 |
 | 2g | Three Dependabot PRs (`auth` 3, `setup-gcloud` 3, `checkout` 7) merged one at a time, each followed by a deploy and a check | **Done** (`00020`-`00022`) |
 | 2h | Websocket: `--timeout 3600` and `--session-affinity` | **Done, live**. `session$allowReconnect(TRUE)` was added too but **does nothing** on Cloud Run (§6) |
-| 2i | Polish: the CSP is **enforced** (promoted from report-only, `'unsafe-eval'` dropped, Spotify image hosts widened to `*.scdn.co`); `--max-instances 3` (was 20); dark text on the Spotify button (7.1:1, was 2.6:1); palette notes moved from `www/` to `design/`; the tests run on the packages in `renv.lock` (R 4.6.1); README screenshot and project page refreshed | **Done** (see §10) |
+| 2i | Polish: the CSP is **enforced** (promoted from report-only, `'unsafe-eval'` dropped, Spotify image hosts widened to `*.scdn.co`); `--max-instances 3` (was 20); dark text on the Spotify button (7.1:1, was 2.6:1); palette notes moved from `www/` to `design/`; the tests run on the packages in `renv.lock` (R 4.6.1); README screenshot and project page refreshed | **Done and verified live** (revision `00024-2x5`; §10) |
 
 Related work in the sibling apps, done in the same session: the light/dark switch now shows the mode a click switches to in TuneTeller and FillariStatus (own button instead of bslib's, which can't be restyled); `allowReconnect("force")` in FillariStatus and BiblioStatus, plus a fix in BiblioStatus that restores the committed filters after a reconnect (details in their `CLAUDE.md` files).
 
@@ -110,7 +110,7 @@ tests/testthat/
 
 ### 5.1 Inventory and the move question (read-only inventory done 2026-10-18)
 
-**`tuneteller-app` (project number 658789231217), as it is now**
+**`tuneteller-app` (project number 658789231217), as it was found on 2026-10-18 (before Phase 2; everything listed as missing here has since been done, see §0)**
 - One real service, `tuneteller-app` (revision 00012, 1 CPU / 1 GiB, timeout 300 s (raised to 3600 s with session affinity on 2026-10-18, see §6; the `allowReconnect(TRUE)` line added at the same time has no effect), concurrency 80, max 20 instances, startup CPU boost, public), plus the domain mapping `tuneteller.youcanbeapirate.com` (Ready).
 - Secrets: `openai-api-key`, `spotify-client-id`, `spotify-client-secret`. Runtime identity: the **default compute account**, which also holds **`roles/editor`** (and `cloudbuild.builds.builder`). Owner: the user. No WIF pool, no dedicated service accounts, no budget API enabled in this project.
 - Artifact Registry `cloud-run-source-deploy`: ~1.7 GB, 9 images of the app (every deploy adds one; nothing cleans up). Buckets `run-sources-tuneteller-app-europe-north1` and `tuneteller-app_cloudbuild` (build sources, also never cleaned).
@@ -179,6 +179,9 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - **Merge Dependabot action bumps one at a time and prove each one:** read the diff, check that the pinned SHA is the tag's commit (`gh api repos/<owner>/<repo>/git/matching-refs/tags/<tag>`), merge, then `gh workflow run deploy_shiny_app.yml --ref main` and check the run, the `git-sha` label on the service, HTTP 200 and the logs before the next one. The workflow files aren't in the deploy paths, so a merge alone proves nothing about the deploy.
 - **`gh workflow run` from `main` is how to deploy without a code change.** The WIF provider only accepts `refs/heads/main`.
 - **Testing a Content-Security-Policy:** (1) the Chrome console tool shows **no** CSP violations at all, neither report-only nor enforced; (2) a `securitypolicyviolation` listener only sees what happens after it is installed, so it misses everything at page load; (3) the tool's JavaScript runs outside the page's CSP and shims `eval` (`eval('1+1')` is "allowed" even when the policy forbids it): test from an inline `<script>` with `new Function(...)`. What works: run a throwaway copy of the app whose `ui.R` has a recorder as the **first** script in `<head>` (`window.__v = []; document.addEventListener('securitypolicyviolation', e => __v.push(...))`), use the app for real (a recommendation, both colour modes), then read `window.__v`. Prove the instrument first by loading a foreign image or script on purpose.
+- **Screenshots with the Chrome tool:** `resize_window` does not change the viewport (it stayed 1174x771), so a tall page is cut off; scale the page instead (`document.body.style.zoom = 0.73`, `document.documentElement.style.overflow = 'hidden'`, scroll to the top). The mouse pointer is drawn into the saved image and moving it can land it on the content (the zoom skews its coordinates): leave it in empty space and crop it out (PIL is available; ImageMagick is not). Saved captures go to `/tmp/claude-chrome-screenshots-*`: delete them afterwards.
+- **`git commit` commits everything staged, not just what you last `git add`ed.** A `git mv` done earlier was swept into an unrelated commit. Run `git diff --cached --stat` before every commit; if it already went wrong and nothing is pushed, `git reset <last pushed commit>` keeps the working tree and lets you redo the commits.
+- **A Docker VM can't bind-mount `/tmp`** (Rancher Desktop) and **`docker build` output reports the pipe's exit code**; use `docker cp` and read the log's own last line.
 - **Don't `pkill -f` a pattern that appears in your own command line:** it kills the shell running it (exit 144).
 - **A rule that denies edits to another app's deploy script** (the auto-mode classifier) is a signal to stop and ask, not to route around it.
 
@@ -212,7 +215,7 @@ Prices (secondary sources, not verified on OpenAI's page): gpt-5.4-nano US$0.20 
 Nothing is blocking: Phase 1 and Phase 2 are done and live, and so is the polish the user chose from the first version of this list. What remains is one check that has to wait, one thing only the user can do, and a few things decided against for now.
 
 ### To check later
-- **Artifact Registry cleanup.** The policy (keep the 5 newest versions, delete the rest) is stored and is not a dry run, but Google evaluates cleanup policies about once a day. On 2026-10-18 there were 19 versions. Expect about 5 (plus any new deploys) by 2026-10-20; if not, read the policy back (`gcloud artifacts repositories describe cloud-run-source-deploy --project tuneteller-app --location europe-north1`) and check the repository's audit logs. The live image is always the newest, so it is never at risk.
+- **Artifact Registry cleanup.** The policy (keep the 5 newest versions, delete the rest) is stored and is not a dry run, but Google evaluates cleanup policies about once a day. On 2026-10-18 there were 19 versions, and 20 after the last deploy. Expect about 5 (plus any new deploys) by 2026-10-20; if not, read the policy back (`gcloud artifacts repositories describe cloud-run-source-deploy --project tuneteller-app --location europe-north1`) and check the repository's audit logs. The live image is always the newest, so it is never at risk.
 
 ### Only the user can do
 - **OpenAI usage limit.** Set a monthly limit in the OpenAI dashboard: the cooldown is per session, so a script that opens many sessions could still make many (cheap) calls. `--max-instances 3` already caps the capacity.
@@ -231,6 +234,7 @@ Nothing is blocking: Phase 1 and Phase 2 are done and live, and so is the polish
 - **Spotify button contrast:** dark text (`#191414`) on the green, 7.1:1 (white was 2.6:1), and a brighter green on hover/focus, 9.5:1 (the old darker green was 4.3:1). The underline is gone too. Test in `test-ui.R`.
 - **Palette notes** moved from `app/www/` (served publicly) to `design/youcanbeapirate_colors.txt`.
 - **CI on the lock:** `tests.yml` now takes the R version from `renv.lock` (it was pinned to 4.5 while the image runs 4.6.1) and restores the locked packages with `setup-renv`; `testthat` and `withr` are installed on top without being recorded. Checked in the run log: R 4.6.1, shiny 1.14.0, bslib 0.12.0, httr2 1.3.0, shinycssloaders 1.1.0, all as binaries; 1 min 43 s.
+- **Verified in production** after the deploy (revision `00024-2x5`): a real recommendation with the artist image from `*.scdn.co` under the enforced CSP, the Spotify button measured at 7.05:1 in both colour modes, and zero violations from a listener installed after load (the load itself was proved clean locally with the early recorder). The project page serves the new text and a screenshot byte-identical to the repo's.
 - **README screenshot and project page:** a new screenshot of a real recommendation in the new design (`img/` and `docs/`); the page no longer names GPT-4o-mini, says "Dark and Light", and has FillariStatus in the footer.
 
 ### Known and accepted
