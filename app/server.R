@@ -1,4 +1,8 @@
 server <- function(input, output, session) {
+  # Reconnect (not full page reload) if the websocket drops, e.g. after
+  # network blips or Cloud Run recycling the connection.
+  session$allowReconnect(TRUE)
+
   # When the next recommendation may be asked for (NULL until the first one)
   cooldown_until <- reactiveVal(NULL)
   # What the card showed last, so a rejected click doesn't wipe it

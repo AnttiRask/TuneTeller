@@ -99,7 +99,7 @@ tests/testthat/
 ### 5.1 Inventory and the move question (read-only inventory done 2026-10-18)
 
 **`tuneteller-app` (project number 658789231217), as it is now**
-- One real service, `tuneteller-app` (revision 00012, 1 CPU / 1 GiB, timeout 300 s, concurrency 80, max 20 instances, startup CPU boost, public), plus the domain mapping `tuneteller.youcanbeapirate.com` (Ready).
+- One real service, `tuneteller-app` (revision 00012, 1 CPU / 1 GiB, timeout 300 s (raised to 3600 s with session affinity and `allowReconnect` on 2026-10-18, see §6), concurrency 80, max 20 instances, startup CPU boost, public), plus the domain mapping `tuneteller.youcanbeapirate.com` (Ready).
 - Secrets: `openai-api-key`, `spotify-client-id`, `spotify-client-secret`. Runtime identity: the **default compute account**, which also holds **`roles/editor`** (and `cloudbuild.builds.builder`). Owner: the user. No WIF pool, no dedicated service accounts, no budget API enabled in this project.
 - Artifact Registry `cloud-run-source-deploy`: ~1.7 GB, 9 images of the app (every deploy adds one; nothing cleans up). Buckets `run-sources-tuneteller-app-europe-north1` and `tuneteller-app_cloudbuild` (build sources, also never cleaned).
 - Billing account `01022A-90DC69-4116A8`, the same as `bibliostatus-app` and `trackteller-app`.
@@ -139,6 +139,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - Update `DEPLOY.md`, `README.md`, `CLAUDE.md` (and this plan).
 
 ## 6. Gotchas carried over from FillariStatus (relevant here)
+- **Cloud Run `--timeout` caps the Shiny websocket too.** At the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server"), which looks like the app "going to sleep". BiblioStatus fixed it on 2026-09-17 (`1d564aa`): `--timeout 3600`, `--session-affinity` and `session$allowReconnect(TRUE)`. TuneTeller, TrackTeller and Gallery of the Day had 300 s; TuneTeller got the fix on 2026-10-18. There is still no minimum instance anywhere, so the first visit after idle has a cold start of ~3 s.
 - **Cloud Run concurrency must exceed the parallel asset requests of one page load**, otherwise overflow requests hit fresh instances that answer 404 for Shiny asset paths (blank page).
 - **Shiny has no response-header hook**: wrap `httpHandler`.
 - **`isTRUE(x)` can silently turn a feature off** (bslib's dark-mode input is a string, not a logical).

@@ -62,7 +62,8 @@
        --set-env-vars "SPOTIFY_CLIENT_ID=your-id" \
        --set-env-vars "SPOTIFY_CLIENT_SECRET=your-secret" \
        --memory 1Gi \
-       --timeout 300
+       --timeout 3600 \
+       --session-affinity
    ```
 
 ## Environment Variables
@@ -105,8 +106,11 @@ gcloud run deploy tuneteller-app \
   --set-secrets "SPOTIFY_CLIENT_ID=spotify-client-id:latest" \
   --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
   --memory 1Gi \
-  --timeout 300
+  --timeout 3600 \
+  --session-affinity
 ```
+
+**Keep `--timeout 3600` and `--session-affinity`.** Cloud Run's timeout also caps how long Shiny's websocket can stay open: at the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server") even for an active user. Session affinity sends a reconnecting browser back to the same instance, and `session$allowReconnect(TRUE)` in `server.R` makes the reconnect quiet.
 
 ## Cost
 
