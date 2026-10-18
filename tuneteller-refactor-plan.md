@@ -72,7 +72,7 @@ tests/testthat/
 - Model name in `variables.R`. Compare gpt-5.4-nano and gpt-5.4-mini side by side on a handful of prompts (quality of the pick, latency) before choosing, with the user.
 
 ### 3.5 Theme and footer
-- Keep the current brand look (red `#C1272D`, Spotify green, background `#191414`, Gotham), **dark by default**, with a light mode and a toggle (`bslib::input_dark_mode(mode = "dark")`); CSS custom properties so colours live in one place; check contrast in both modes (brand red is only 3.1:1 on `#191414`; FillariStatus uses `#F26B70` for dark-mode links).
+- Keep the current brand look (red `#C1272D`, Spotify green, background `#191414`, Gotham), **dark by default**, with a light mode and a toggle (first with `bslib::input_dark_mode()`; replaced by our own button because bslib's icon always shows the *current* mode and can't be restyled, and the user wants the icon of the mode a click switches to: sun while dark, moon while light); CSS custom properties so colours live in one place; check contrast in both modes (brand red is only 3.1:1 on `#191414`; FillariStatus uses `#F26B70` for dark-mode links).
 - Footer: one shared list in `variables.R`; add **FillariStatus** (`https://fillaristatus.youcanbeapirate.com`). Keep the standard cross-app format.
 
 ### 3.6 Security

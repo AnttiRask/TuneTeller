@@ -39,6 +39,34 @@ a:focus, a:hover {
     right: 0;
 }
 
+/* The icon shows the mode a click switches to: a sun while dark, a moon while
+   light (mode-toggle.js sets data-bs-theme on <html>) */
+.tt-mode-button {
+    background: none;
+    border: none;
+    border-radius: 50%;
+    padding: 0.4rem;
+    line-height: 0;
+    color: var(--bs-body-color);
+    cursor: pointer;
+}
+
+.tt-mode-button:hover {
+    background-color: var(--tt-card-bg);
+}
+
+.tt-icon-sun {
+    display: none;
+}
+
+:root[data-bs-theme=dark] .tt-icon-sun {
+    display: block;
+}
+
+:root[data-bs-theme=dark] .tt-icon-moon {
+    display: none;
+}
+
 .artist-card {
     background-color: var(--tt-card-bg);
     border-radius: 5px;

@@ -37,7 +37,7 @@ The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loadin
 
 - **`app/run.R`** - Entry point; sets the working directory to `app/`, wraps the app's page handler with the security headers and starts the server on `$PORT` (default 8080)
 - **`app/global.R`** - Libraries, then sources `variables.R`, `strings.R`, `prompt_versions.R`, `functions.R`, `api.R`
-- **`app/ui.R`** - `bslib::page_fluid` with Bootstrap 5, dark by default and a light/dark switch (`input_dark_mode`). Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps; its links come from `footer_apps` in `variables.R`
+- **`app/ui.R`** - `bslib::page_fluid` with Bootstrap 5, dark by default and a light/dark switch (our own button, `mode_toggle_button()` + `www/mode-toggle.js`, because bslib's `input_dark_mode()` always shows the current mode and its icon can't be restyled). Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps; its links come from `footer_apps` in `variables.R`
 - **`app/server.R`** - Reactive logic only: `recommendation_result` (an `eventReactive` on `input$go`) cleans the prompt, enforces the 10 s cooldown, calls `get_recommendation()` then `find_artist()` and returns a state list (`ok` / `no_artist` / `error`) that `artist_card_ui()` renders. The spinner covers the whole request because the card output depends on it
 - **`app/www/variables.R`** - Model name, limits (190 characters, 10 s cooldown, timeouts), brand colours, footer links
 - **`app/www/strings.R`** - All user-facing text
@@ -45,6 +45,7 @@ The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loadin
 - **`app/www/api.R`** - OpenAI (`/v1/responses`, JSON-schema output) and Spotify (client credentials, `httr2`). `get_recommendation()` and `find_artist()` never throw; they return `list(status, data)`
 - **`app/www/functions.R`** - Pure helpers: `clean_prompt()`, `parse_recommendation()`, `theme_css()`, `artist_card_ui()`
 - **`app/www/security.R`** - Security headers and `with_security_headers()`
+- **`app/www/mode-toggle.js`** - Starts the page in dark mode and flips Bootstrap's `data-bs-theme`; the icon shows the mode a click switches to (sun while dark, moon while light)
 - **`app/www/cooldown.js`** - Disables the button and shows the seconds left, driven by the server
 - **`app/www/styles.css`** - Custom styles; colours come from CSS custom properties injected by `theme_css()`; brand color is `#C1272D`, Spotify green is `#1DB954`, dark background is `#191414`
 - **`tests/testthat/`** - Tests with mocked HTTP (`httr2::local_mocked_responses()`); `helper-app.R` loads the app code

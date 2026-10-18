@@ -120,6 +120,46 @@ theme_css <- function(colours = brand_colours) {
   )
 }
 
+# The light/dark switch. bslib's input_dark_mode() always shows the current mode
+# (a moon while dark) and its icon can't be restyled from outside its shadow DOM,
+# so this is our own button: it shows the mode a click switches to (a sun while
+# dark, a moon while light) and mode-toggle.js flips Bootstrap's data-bs-theme.
+mode_toggle_button <- function() {
+  # Feather icons (MIT)
+  icon <- function(class, ...) {
+    tags$svg(
+      class = str_c("tt-mode-icon ", class),
+      viewBox = "0 0 24 24",
+      width = "22",
+      height = "22",
+      fill = "none",
+      stroke = "currentColor",
+      `stroke-width` = "2",
+      `stroke-linecap` = "round",
+      `stroke-linejoin` = "round",
+      `aria-hidden` = "true",
+      ...
+    )
+  }
+
+  tags$button(
+    id = "mode-toggle",
+    type = "button",
+    class = "tt-mode-button",
+    `data-label-to-light` = strings$mode_to_light,
+    `data-label-to-dark` = strings$mode_to_dark,
+    icon(
+      "tt-icon-sun",
+      tags$circle(cx = "12", cy = "12", r = "5"),
+      tags$path(d = "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42")
+    ),
+    icon(
+      "tt-icon-moon",
+      tags$path(d = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z")
+    )
+  )
+}
+
 # Artist card --------------------------------------------------------------------
 
 # What the card shows for a result. `result$state` is one of:

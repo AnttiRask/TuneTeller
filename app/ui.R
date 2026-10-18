@@ -36,11 +36,13 @@ ui <- page_fluid(
         )
     ),
 
-    # The tab title, favicon, colours of both modes and the cooldown script
+    # The tab title, favicon, colours of both modes and the scripts (mode-toggle.js
+    # sets the page to dark straight away, so it must load in the head)
     tags$head(
         tags$title(strings$title),
         tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png"),
         tags$style(HTML(theme_css())),
+        tags$script(src = "mode-toggle.js"),
         tags$script(src = "cooldown.js")
     ),
 
@@ -54,7 +56,7 @@ ui <- page_fluid(
         div(
             class = "tt-header",
             h2(strings$title),
-            div(class = "tt-mode-toggle", input_dark_mode(id = "dark_mode", mode = "dark"))
+            div(class = "tt-mode-toggle", mode_toggle_button())
         ),
         sidebarLayout(
             sidebarPanel(

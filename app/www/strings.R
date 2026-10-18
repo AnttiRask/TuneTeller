@@ -11,6 +11,10 @@ strings <- list(
   button_wait = "Please wait ({seconds} s)",
   button_clear = "Clear Text",
 
+  # Light/dark switch: the labels name the mode a click switches to
+  mode_to_light = "Switch to light mode",
+  mode_to_dark = "Switch to dark mode",
+
   # Notifications
   prompt_empty = "Describe the music you would like to hear first.",
   prompt_too_long = "You exceeded the {prompt_max_chars} character limit!",
