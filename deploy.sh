@@ -57,7 +57,8 @@ gcloud run deploy "$SERVICE_NAME" \
     --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
     --memory 1Gi \
     --timeout 3600 \
-    --session-affinity
+    --session-affinity \
+    --max-instances 3
 
 # Get the service URL
 SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format="value(status.url)")

@@ -63,7 +63,8 @@
        --set-env-vars "SPOTIFY_CLIENT_SECRET=your-secret" \
        --memory 1Gi \
        --timeout 3600 \
-       --session-affinity
+       --session-affinity \
+       --max-instances 3
    ```
 
 ## Environment Variables
@@ -107,8 +108,11 @@ gcloud run deploy tuneteller-app \
   --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
   --memory 1Gi \
   --timeout 3600 \
-  --session-affinity
+  --session-affinity \
+  --max-instances 3
 ```
+
+**Keep `--max-instances 3`.** TuneTeller's cooldown is per session, so a script that opens many sessions could otherwise make many paid OpenAI calls; three instances at 80 requests each is plenty for this app and caps the damage. Raise it only if traffic really needs it.
 
 **Keep `--timeout 3600` and `--session-affinity`.** Cloud Run's timeout also caps how long Shiny's websocket can stay open: at the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server") even for an active user. 3600 s is the most Cloud Run allows, so a page left open for over an hour (or a network drop) still greys out until it is reloaded.
 

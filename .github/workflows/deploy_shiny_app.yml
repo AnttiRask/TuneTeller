@@ -75,6 +75,7 @@ jobs:
             --memory 1Gi \
             --timeout 3600 \
             --session-affinity \
+            --max-instances 3 \
             --update-labels "git-sha=${GITHUB_SHA::12}" \
             --quiet
 
