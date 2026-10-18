@@ -149,32 +149,36 @@ a:focus, a:hover {
     cursor: not-allowed;
 }
 
+/* Dark text on Spotify green: 7.1:1 (white on #1DB954 was 2.6:1); the brighter
+   green on hover/focus keeps 9.5:1, where the old darker green fell to 4.3:1 */
 .button-spotify {
     background-color: #1DB954;
-    color: #FFFFFF;
+    color: #191414;
     border: none;
     padding: 10px 20px;
     border-radius: 5px;
     transition: background-color 0.3s ease;
+    text-decoration: none;
     width: 100%;
 }
 
 .button-spotify:active {
     background-color: #1DB954 !important;
-    border: 1px solid #FFFFFF !important;
-    color: #FFFFFF !important;
+    border: 1px solid #191414 !important;
+    color: #191414 !important;
     box-shadow: 0 0 0 3px #168d40;
 }
 
 .button-spotify:focus {
-    background-color: #168d40;
-    border: 1px solid #FFFFFF;
-    color: #FFFFFF;
+    background-color: #1ED760;
+    border: 1px solid #191414;
+    color: #191414;
 }
 
 .button-spotify:hover {
-    background-color: #168d40;
-    color: #FFFFFF;
+    background-color: #1ED760;
+    color: #191414;
+    text-decoration: none;
 }
 
 .form-control:focus {

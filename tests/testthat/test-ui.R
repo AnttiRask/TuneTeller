@@ -60,3 +60,15 @@ test_that("the stylesheet shows the sun in dark mode and the moon in light mode"
   expect_match(css, ":root[data-bs-theme=dark] .tt-icon-sun {\n    display: block;", fixed = TRUE)
   expect_match(css, ":root[data-bs-theme=dark] .tt-icon-moon {\n    display: none;", fixed = TRUE)
 })
+
+test_that("the Spotify button uses dark text on its green, not white (contrast)", {
+  css <- paste(readLines(file.path(app_dir, "www", "styles.css")), collapse = "\n")
+  block <- function(selector) {
+    str_match(css, str_c(str_replace_all(selector, "([.:])", "\\\\\\1"), " \\{([^}]*)\\}"))[, 2]
+  }
+
+  for (selector in c(".button-spotify", ".button-spotify:hover", ".button-spotify:focus")) {
+    expect_match(block(selector), "color: #191414", fixed = TRUE, info = selector)
+    expect_no_match(block(selector), "color: #FFFFFF", fixed = TRUE, info = selector)
+  }
+})
