@@ -68,5 +68,5 @@ The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loadin
 - Deployed on Google Cloud Run in `europe-north1`, project `tuneteller-app`
 - Production secrets stored in GCP Secret Manager (not env vars)
 - Pushes to `main` that change `app/**` or the build files deploy automatically (`.github/workflows/deploy_shiny_app.yml`: tests, then build + deploy + smoke test; keyless login through Workload Identity Federation as `tuneteller-deploy`). Run the tests first and batch app changes into one push. Docs, tests and plan-only pushes don't deploy. See `DEPLOY.md`
-- The service runs as `tuneteller-runtime` (only the 3 secrets), timeout 3600 s with session affinity (a shorter timeout makes the websocket drop after 5 minutes and the page grey out)
+- The service runs as `tuneteller-runtime` (only the 3 secrets), timeout 3600 s with session affinity (a shorter timeout makes the websocket drop after 5 minutes and the page grey out). `session$allowReconnect(TRUE)` in `server.R` has no effect on Cloud Run, and `"force"` must not be used here (a reconnect would re-run the paid OpenAI call): see `DEPLOY.md`
 - `docker compose restart` does NOT re-read `.env` - use `docker compose up -d --force-recreate`

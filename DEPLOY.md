@@ -110,7 +110,9 @@ gcloud run deploy tuneteller-app \
   --session-affinity
 ```
 
-**Keep `--timeout 3600` and `--session-affinity`.** Cloud Run's timeout also caps how long Shiny's websocket can stay open: at the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server") even for an active user. Session affinity sends a reconnecting browser back to the same instance, and `session$allowReconnect(TRUE)` in `server.R` makes the reconnect quiet.
+**Keep `--timeout 3600` and `--session-affinity`.** Cloud Run's timeout also caps how long Shiny's websocket can stay open: at the default 300 s the connection is closed after 5 minutes and the page greys out ("Disconnected from server") even for an active user. 3600 s is the most Cloud Run allows, so a page left open for over an hour (or a network drop) still greys out until it is reloaded.
+
+**`session$allowReconnect(TRUE)` (in `server.R`) does not help.** The Shiny client only reconnects if the host (Shiny Server, Posit Connect) allows it too, and Cloud Run with plain Shiny does not: closing the websocket by hand (`Shiny.shinyapp.$socket.close()`) leaves the page greyed out and disconnected. It is kept only for parity with the other apps. `session$allowReconnect("force")` does make the client reconnect (FillariStatus and BiblioStatus use it), but **not for TuneTeller as it stands**: a reconnect starts a new session and the browser re-sends its inputs, including the "Get Recommendation" click count, so `recommendation_result` would run again and make a paid OpenAI call nobody asked for. To use `"force"` here, first make that observer ignore a click count that was already handled. Session affinity keeps the requests of one browser on one instance.
 
 ## Cost
 

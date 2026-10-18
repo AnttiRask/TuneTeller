@@ -1,6 +1,9 @@
 server <- function(input, output, session) {
-  # Reconnect (not full page reload) if the websocket drops, e.g. after
-  # network blips or Cloud Run recycling the connection.
+  # No effect on Cloud Run: the Shiny client only reconnects if the host (Shiny
+  # Server, Posit Connect) allows it too, so a dropped websocket still greys the
+  # page out. Kept for parity with the other apps. Don't switch it to "force"
+  # here: the new session would be sent the "Get Recommendation" click count
+  # again and re-run the (paid) recommendation. See DEPLOY.md.
   session$allowReconnect(TRUE)
 
   # When the next recommendation may be asked for (NULL until the first one)
