@@ -1,15 +1,17 @@
+/* Colours that differ between dark and light mode (--tt-accent, --tt-link,
+   --tt-card-bg, --tt-card-border) are injected from variables.R by ui.R, with
+   the dark-mode values under :root[data-bs-theme=dark]. Dark is the default. */
+
 /* Fonts */
 @import url("https://fonts.cdnfonts.com/css/gotham-6");
 
 body {
     font-family: "Gotham", sans-serif;
-    background-color: #191414;
-    color: #FFFFFF;
 }
 
 h2, .h2 {
     font-family: "Gotham", sans-serif;
-    color: #C1272D;
+    color: var(--tt-accent);
     font-size: 70px;
     margin-bottom: 30px;
     text-align: center;
@@ -17,7 +19,7 @@ h2, .h2 {
 
 h3, .h3 {
     font-family: "Gotham", sans-serif;
-    color: #C1272D;
+    color: var(--tt-accent);
 }
 
 a:focus, a:hover {
@@ -26,16 +28,21 @@ a:focus, a:hover {
 
 /* Classes */
 
-.alert-info {
-    color: #C1272D;
-    background-color: #ea979a;
-    border-color: #C1272D;
+/* The title is centred; the light/dark switch sits in the top right corner */
+.tt-header {
+    position: relative;
+}
+
+.tt-mode-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 
 .artist-card {
-    background-color: #1a1a1a;
+    background-color: var(--tt-card-bg);
     border-radius: 5px;
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--tt-card-border);
     padding: 20px;
 }
 
@@ -62,9 +69,9 @@ a:focus, a:hover {
 }
 
 .button-clear:active {
-    background-color: #B2B2B2 !important; 
+    background-color: #B2B2B2 !important;
     border: 1px solid #FFFFFF !important;
-    color: #1a1a1a !important; 
+    color: #1a1a1a !important;
     box-shadow: 0 0 0 3px #B2B2B2;
 }
 
@@ -89,9 +96,9 @@ a:focus, a:hover {
 }
 
 .button-recommendation:active {
-    background-color: #C1272D !important; 
+    background-color: #C1272D !important;
     border: 1px solid #FFFFFF !important;
-    color: #FFFFFF !important; 
+    color: #FFFFFF !important;
     box-shadow: 0 0 0 3px #C1272D;
 }
 
@@ -106,6 +113,14 @@ a:focus, a:hover {
     color: #FFFFFF;
 }
 
+/* The button waits out the cooldown (see cooldown.js) */
+.button-recommendation:disabled {
+    background-color: #C1272D;
+    color: #FFFFFF;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .button-spotify {
     background-color: #1DB954;
     color: #FFFFFF;
@@ -117,9 +132,9 @@ a:focus, a:hover {
 }
 
 .button-spotify:active {
-    background-color: #1DB954 !important; 
+    background-color: #1DB954 !important;
     border: 1px solid #FFFFFF !important;
-    color: #FFFFFF !important; 
+    color: #FFFFFF !important;
     box-shadow: 0 0 0 3px #168d40;
 }
 
@@ -141,8 +156,8 @@ a:focus, a:hover {
 }
 
 .well {
-    background-color: #1a1a1a;
-    border-color: #e5e5e5;
+    background-color: var(--tt-card-bg);
+    border-color: var(--tt-card-border);
     border-radius: 5px;
 }
 
@@ -159,35 +174,30 @@ a:focus, a:hover {
 }
 
 /* Image */
-img {
+.artist-card img {
     height: 100%;
     width:  100%; /* Adjust this to control the image size */
 }
 
 /* Footer styling */
 .app-footer {
-    border-top: 1px solid #333333;
+    border-top: 1px solid var(--bs-border-color);
     margin-top: 3rem;
     padding-top: 2rem;
 }
 
 .app-footer a {
-    color: #C1272D;
+    color: var(--tt-link);
     text-decoration: none;
 }
 
 .app-footer a:hover {
-    color: #a02025;
     text-decoration: underline;
-}
-
-.app-footer .text-muted {
-    color: #808080 !important;
 }
 
 /* Accessibility - Keyboard Navigation */
 a:focus, button:focus, input:focus, select:focus, textarea:focus {
-    outline: 2px solid #C1272D;
+    outline: 2px solid var(--tt-link);
     outline-offset: 2px;
 }
 
