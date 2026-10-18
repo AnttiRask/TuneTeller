@@ -1,6 +1,7 @@
 name: Tests
 
-# Runs the testthat suite: mocked HTTP, no API keys, no Google Cloud. Runs on
+# Runs the testthat suite on the packages in renv.lock: mocked HTTP, no API keys,
+# no Google Cloud. Runs on
 # pull requests, on pushes that change the tests, on demand, and as the first
 # job of the deploy workflow (which only deploys if these pass).
 on:
@@ -25,20 +26,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The R version and every package version come from renv.lock, so the tests
+      # run on what the production image runs (see the Dockerfile)
       - name: Set up R
         uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
-          r-version: "4.5"
+          r-version: renv
+          use-public-rspm: true
 
-      # --vanilla keeps the project's .Rprofile (renv) out of it, so the packages
-      # come from Posit's binary repository, not from renv.lock
-      - name: Install packages
+      - name: Restore packages from renv.lock
+        uses: r-lib/actions/setup-renv@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+
+      # Test-only packages: the app doesn't need them, so they aren't in renv.lock
+      # (renv::install() adds them to the project library without recording them)
+      - name: Install the test packages
         run: |
-          Rscript --vanilla -e 'install.packages(
-            c("bslib", "httr2", "jsonlite", "later", "promises", "purrr", "shiny",
-              "shinycssloaders", "stringr", "testthat", "withr"),
-            repos = "https://packagemanager.posit.co/cran/__linux__/noble/latest")'
+          Rscript -e 'options(renv.config.repos.override = c(CRAN = "https://p3m.dev/cran/__linux__/noble/latest")); renv::install(c("testthat", "withr"), prompt = FALSE)'
 
+      # No --vanilla: the project's .Rprofile activates renv, which is the point
       - name: Run tests
         run: |
-          Rscript --vanilla -e 'testthat::test_dir("tests/testthat", reporter = "summary", stop_on_failure = TRUE)'
+          Rscript -e 'testthat::test_dir("tests/testthat", reporter = "summary", stop_on_failure = TRUE)'
