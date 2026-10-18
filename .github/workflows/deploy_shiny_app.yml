@@ -51,7 +51,7 @@ jobs:
       # Only this repo's main branch can use the pool (see the provider's
       # attribute condition); the account can deploy this one service and nothing else
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/tuneteller/providers/github-oidc
           service_account: tuneteller-deploy@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
