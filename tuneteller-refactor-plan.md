@@ -13,7 +13,7 @@
 | # | Item | Status |
 |---|---|---|
 | 0 | Fix: `spotifyr` sent the token in the URL, Spotify answered 401 (replaced by `httr2`, `app/www/spotify.R`, `4f3b123`) | **Done, live** (revision `tuneteller-app-00011-zpc`) |
-| 1 | Phase 1: app code (structure, robustness, model switch, tests, security headers, light mode, footer, dependencies) | **Implemented locally, awaiting review** (166 test expectations pass; checked in Chrome: dark/light, a real recommendation, empty and over-long prompts, cooldown, OpenAI-failure state; production Docker build being verified). Not committed or deployed |
+| 1 | Phase 1: app code (structure, robustness, model switch, tests, security headers, light mode, footer, dependencies) | **Done, live** (commits `f4d57dc`, `7cd7ca3`, `5b63e98`; revision `tuneteller-app-00012-f64`, 100 % of traffic). Verified: 166 test expectations; the production image built from the lock (R 4.5.0, shiny 1.10.0, bslib 0.9.0) and checked in Chrome; the live site with a real prompt, logs clean |
 | 2 | Phase 2: infrastructure (project move?, runtime account, Actions auto-deploy, Dependabot, Dockerfile, docs) | Not started |
 
 ## 1. Why
