@@ -1,9 +1,9 @@
 name: Tests
 
 # Runs the testthat suite on the packages in renv.lock: mocked HTTP, no API keys,
-# no Google Cloud. Runs on
-# pull requests, on pushes that change the tests, on demand, and as the first
-# job of the deploy workflow (which only deploys if these pass).
+# no Google Cloud. Runs on pull requests, on pushes that change the tests, on
+# demand, and as the first job of the deploy workflow (which only deploys if
+# these pass).
 on:
   pull_request:
   push:

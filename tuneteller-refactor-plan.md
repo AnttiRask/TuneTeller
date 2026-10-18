@@ -24,6 +24,7 @@ Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app`
 | 2f | Cleanup: Artifact Registry keeps the 5 newest versions; 30-day lifecycle on the two build buckets; two stray failed services deleted | **Applied**; the registry cleanup has **not run yet** (19 versions on 2026-10-18), see §10 |
 | 2g | Three Dependabot PRs (`auth` 3, `setup-gcloud` 3, `checkout` 7) merged one at a time, each followed by a deploy and a check | **Done** (`00020`-`00022`) |
 | 2h | Websocket: `--timeout 3600` and `--session-affinity` | **Done, live**. `session$allowReconnect(TRUE)` was added too but **does nothing** on Cloud Run (§6) |
+| 2i | Polish: the CSP is **enforced** (promoted from report-only, `'unsafe-eval'` dropped, Spotify image hosts widened to `*.scdn.co`); `--max-instances 3` (was 20); dark text on the Spotify button (7.1:1, was 2.6:1); palette notes moved from `www/` to `design/`; the tests run on the packages in `renv.lock` (R 4.6.1); README screenshot and project page refreshed | **Done** (see §10) |
 
 Related work in the sibling apps, done in the same session: the light/dark switch now shows the mode a click switches to in TuneTeller and FillariStatus (own button instead of bslib's, which can't be restyled); `allowReconnect("force")` in FillariStatus and BiblioStatus, plus a fix in BiblioStatus that restores the committed filters after a reconnect (details in their `CLAUDE.md` files).
 
@@ -87,7 +88,7 @@ tests/testthat/
 - Footer: one shared list in `variables.R`; add **FillariStatus** (`https://fillaristatus.youcanbeapirate.com`). Keep the standard cross-app format.
 
 ### 3.6 Security
-- `www/security.R` + `run.R` wrapper (wrap `app$httpHandler`; `shiny.http.response.filter` does nothing): `X-Frame-Options: DENY`, CSP `frame-ancestors 'none'` etc., `Referrer-Policy`, `Permissions-Policy`, HSTS, `nosniff`, plus a report-only full CSP (Spotify image host `i.scdn.co`, the font host).
+- `www/security.R` + `run.R` wrapper (wrap `app$httpHandler`; `shiny.http.response.filter` does nothing): `X-Frame-Options: DENY`, CSP (report-only at first, **enforced since 2026-10-18**: `default-src 'self'`, inline script/style allowed, no `unsafe-eval`, Spotify's image CDNs, the font host, `wss:`), `Referrer-Policy`, `Permissions-Policy`, HSTS, `nosniff`, plus a report-only full CSP (Spotify image host `i.scdn.co`, the font host).
 - Escape everything from the model and from Spotify before it reaches the page (names, descriptions, URLs); only allow `https://` image and profile URLs.
 
 ### 3.7 Dependencies
@@ -177,6 +178,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - **Artifact Registry cleanup policy JSON:** the action is an object, `{"type": "Keep"}` / `{"type": "Delete"}`, and `tagState` is `"any"`; a bare string (`"Keep"`, `"KEEP"`) is rejected with `Invalid action`. A `Keep` policy wins over a `Delete` one. Policies run asynchronously (about daily), and rolling back to a revision whose image was removed no longer works.
 - **Merge Dependabot action bumps one at a time and prove each one:** read the diff, check that the pinned SHA is the tag's commit (`gh api repos/<owner>/<repo>/git/matching-refs/tags/<tag>`), merge, then `gh workflow run deploy_shiny_app.yml --ref main` and check the run, the `git-sha` label on the service, HTTP 200 and the logs before the next one. The workflow files aren't in the deploy paths, so a merge alone proves nothing about the deploy.
 - **`gh workflow run` from `main` is how to deploy without a code change.** The WIF provider only accepts `refs/heads/main`.
+- **Testing a Content-Security-Policy:** (1) the Chrome console tool shows **no** CSP violations at all, neither report-only nor enforced; (2) a `securitypolicyviolation` listener only sees what happens after it is installed, so it misses everything at page load; (3) the tool's JavaScript runs outside the page's CSP and shims `eval` (`eval('1+1')` is "allowed" even when the policy forbids it): test from an inline `<script>` with `new Function(...)`. What works: run a throwaway copy of the app whose `ui.R` has a recorder as the **first** script in `<head>` (`window.__v = []; document.addEventListener('securitypolicyviolation', e => __v.push(...))`), use the app for real (a recommendation, both colour modes), then read `window.__v`. Prove the instrument first by loading a foreign image or script on purpose.
 - **Don't `pkill -f` a pattern that appears in your own command line:** it kills the shell running it (exit 144).
 - **A rule that denies edits to another app's deploy script** (the auto-mode classifier) is a signal to stop and ask, not to route around it.
 
@@ -207,28 +209,32 @@ Prices (secondary sources, not verified on OpenAI's page): gpt-5.4-nano US$0.20 
 
 ## 10. What is left (2026-10-18)
 
-Nothing in the plan is blocking: Phase 1 and Phase 2 are done and live. What remains is one check that has to wait, three decisions that are the user's, and optional polish.
+Nothing is blocking: Phase 1 and Phase 2 are done and live, and so is the polish the user chose from the first version of this list. What remains is one check that has to wait, one thing only the user can do, and a few things decided against for now.
 
 ### To check later
 - **Artifact Registry cleanup.** The policy (keep the 5 newest versions, delete the rest) is stored and is not a dry run, but Google evaluates cleanup policies about once a day. On 2026-10-18 there were 19 versions. Expect about 5 (plus any new deploys) by 2026-10-20; if not, read the policy back (`gcloud artifacts repositories describe cloud-run-source-deploy --project tuneteller-app --location europe-north1`) and check the repository's audit logs. The live image is always the newest, so it is never at risk.
 
-### Waiting for the user
-1. **TrackTeller and Gallery of the Day websocket fix.** Both still run with `--timeout 300` and no session affinity, so their pages grey out after 5 minutes. Fix: `--timeout 3600 --session-affinity` in their `deploy.sh` and on the running services. Not done because the permission classifier blocked my edit of another app's deploy script (the user will come back to it). `session$allowReconnect(TRUE)` is pointless there (§6); `"force"` is only safe after reading each app's server for non-idempotent actions behind an input (TrackTeller calls the Spotify API; check that a reconnect, which re-sends the inputs, can't repeat something paid or harmful).
-2. **Cost exposure.** The 10 s cooldown is per session, so a script that opens many sessions can still make many OpenAI calls (each costs a fraction of a cent, and `--max-instances 20` is generous). Suggested: set a monthly usage limit in the OpenAI dashboard (the user's action; I can't), lower `--max-instances` (BiblioStatus and FillariStatus use 3) in `deploy.sh` and the workflow, and confirm that the EUR 30/month billing budget on the shared billing account covers this project (I could not read budgets: the API isn't enabled in `tuneteller-app`, and I didn't enable it).
-3. **Cold start.** `min-instances` is 0 everywhere, so the first visit after idle takes about 3 s. `--min-instances 1` removes it for a small recurring cost; not applied.
+### Only the user can do
+- **OpenAI usage limit.** Set a monthly limit in the OpenAI dashboard: the cooldown is per session, so a script that opens many sessions could still make many (cheap) calls. `--max-instances 3` already caps the capacity.
+- **Billing budget.** Confirm that the EUR 30/month budget on the shared billing account covers this project (I could not read budgets: the API isn't enabled in `tuneteller-app`, and I didn't enable it).
 
-### Optional
-- **Recommendation quality.** gpt-5.4-nano's picks looked good in testing; one looked off (a Finnish band for "90s britpop"). If it disappoints, `openai_model` in `www/variables.R` is a one-line change to gpt-5.4-mini; compare the two on ~10 prompts first (§9).
-- **Enforce the CSP.** The full policy is report-only. After real use in both colour modes with no violations (Spotify's image hosts `i.scdn.co` and `*.spotifycdn.com`, the font host), promote it in `www/security.R`. The Chrome console tool doesn't show report-only violations: use a `securitypolicyviolation` listener (§6).
-- **A page open for over an hour still greys out** (3600 s is Cloud Run's maximum and `allowReconnect(TRUE)` does nothing). Using `"force"` needs `recommendation_result` to be idempotent first: the re-sent "Get Recommendation" click count would otherwise repeat the paid call. One way: send the click to the server as a `priority: "event"` input, which the browser doesn't re-send. Probably not worth it for short sessions.
-- **README screenshot** (`img/screenshot.png`) and the `docs/` page show the old UI (no light mode, no switch).
-- **Spotify button contrast.** White text on `#1DB954` is about 2.2:1. Pre-existing.
-- **`app/www/darken_lighten_youcanbeapirate_colors.txt`** is served publicly from `www/`. Harmless palette notes, but it doesn't belong there.
-- **CI vs production package versions.** `tests.yml` installs the newest packages from Posit; the image uses `renv.lock`. They can drift. Restoring from the lock in CI would match production at the cost of a slower run.
-- **R package updates are manual** (Dependabot doesn't cover renv). Regenerate `renv.lock` inside the image as described in §5.3 when an update or a new package is needed.
+### Decided against, for now (2026-10-18)
+- **TrackTeller and Gallery of the Day websocket fix** (`--timeout 3600 --session-affinity`; both still have 300 s, so their pages grey out after 5 minutes): skipped; the user will come back to it. `allowReconnect(TRUE)` is pointless there; `"force"` needs a review of each app's server first (§6).
+- **Cold start** (`min-instances` 0, about 3 s on the first visit after idle): no change.
+- **Comparing gpt-5.4-nano with gpt-5.4-mini:** skipped. `openai_model` in `www/variables.R` is the one-line switch.
+- **A page open for over an hour still greys out** (3600 s is Cloud Run's maximum and `allowReconnect(TRUE)` does nothing). `"force"` needs `recommendation_result` to be idempotent first (§6); not worth it for short sessions.
+- **R package updates stay manual** (Dependabot doesn't cover renv): regenerate `renv.lock` inside the image as described in §5.3 when an update or a new package is needed.
+
+### Done from the first version of this list (2026-10-18)
+- **`--max-instances 3`** in `deploy.sh`, the workflow and `DEPLOY.md` (it was Cloud Run's default of 20).
+- **CSP enforced.** One policy in `www/security.R`: `default-src 'self'`, inline script and style (Shiny and bslib need them), **no `unsafe-eval`**, images from `*.scdn.co` and `*.spotifycdn.com`, fonts from `fonts.cdnfonts.com`, `connect-src 'self' wss:`. Tested in a browser with a violation recorder running from the first script: **zero violations** across page load, a real recommendation (artist image, font, Spotify button) and both colour modes; a foreign image and script were blocked, as they should be (§6 for how to test this). Tests in `test-security.R`.
+- **Spotify button contrast:** dark text (`#191414`) on the green, 7.1:1 (white was 2.6:1), and a brighter green on hover/focus, 9.5:1 (the old darker green was 4.3:1). The underline is gone too. Test in `test-ui.R`.
+- **Palette notes** moved from `app/www/` (served publicly) to `design/youcanbeapirate_colors.txt`.
+- **CI on the lock:** `tests.yml` now takes the R version from `renv.lock` (it was pinned to 4.5 while the image runs 4.6.1) and restores the locked packages with `setup-renv`; `testthat` and `withr` are installed on top without being recorded. Checked in the run log: R 4.6.1, shiny 1.14.0, bslib 0.12.0, httr2 1.3.0, shinycssloaders 1.1.0, all as binaries; 1 min 43 s.
+- **README screenshot and project page:** a new screenshot of a real recommendation in the new design (`img/` and `docs/`); the page no longer names GPT-4o-mini, says "Dark and Light", and has FillariStatus in the footer.
 
 ### Known and accepted
-- Only desktop Chrome was driven. **Phones, Safari and Firefox were never checked**, including the new light/dark button and the cooldown countdown.
+- Only desktop Chrome was driven. **Phones, Safari and Firefox were never checked**, including the new light/dark button, the cooldown countdown and the enforced CSP.
 - `run.developer` lets the deploy account delete the one service (§5.2); the real boundary is the repo's `main` branch.
 - The branch-protection enforcement was read back but never exercised (testing it would mean rewriting `main`).
 - Cloud Build still runs as the default compute account, which keeps `cloudbuild.builds.builder`.
