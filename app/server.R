@@ -5,11 +5,12 @@ library(jsonlite) # For JSON parsing
 library(purrr) # For pluck()
 library(shiny) # Core Shiny package
 library(shinyBS) # For Bootstrap components in Shiny
-library(spotifyr) # For interfacing with the Spotify API
 library(stringr) # For string manipulation
 
 # Source the script containing the latest prompt version
 source("www/prompt_versions.R")
+# Source the Spotify API helpers
+source("www/spotify.R")
 
 server <- function(input, output, session) {
   # Reactive value to store the Spotify URL, initialized to NULL
@@ -143,30 +144,20 @@ server <- function(input, output, session) {
       htmltools::htmlEscape() %>%
       str_replace_all("  ", "<br><br>")
 
-    # Fetch artist details from Spotify using {spotifyr} package
-    artist_spotify <- search_spotify(
-      artist_name,
-      type = "artist",
-      limit = 1,
-      authorization = get_spotify_access_token(
-        client_id = Sys.getenv("SPOTIFY_CLIENT_ID"),
-        client_secret = Sys.getenv("SPOTIFY_CLIENT_SECRET")
-      )
+    # Fetch artist details from Spotify; a failed request shows the
+    # "No artist details available." message instead of ending the session
+    artist_spotify <- tryCatch(
+      search_spotify_artist(artist_name),
+      error = function(e) {
+        message("Spotify request failed: ", conditionMessage(e))
+        NULL
+      }
     )
 
     # Check if the artist was found and has images
-    if (!is.null(artist_spotify) && length(artist_spotify$images) > 0) {
-      # Prepare the result list with details for rendering in the UI
-      result_spotify <- list(
-        followers = artist_spotify %>% pull(followers.total),
-        imageUrl = artist_spotify %>%
-          pluck("images", 1) %>%
-          slice_head(n = 1) %>%
-          pull(url),
-        info = artist_info,
-        name = artist_spotify %>% pull(name),
-        spotifyUrl = artist_spotify %>% pull(external_urls.spotify)
-      )
+    if (!is.null(artist_spotify)) {
+      # Add the OpenAI description for rendering in the UI
+      result_spotify <- c(artist_spotify, list(info = artist_info))
       # Print the result to the console for debugging purposes
       print("result_spotify:")
       print(result_spotify)

@@ -87,7 +87,6 @@ Deployed to Google Cloud Run. See `deploy.sh` and `DEPLOY.md` for details.
 - [shiny](https://shiny.posit.co/) - Web application framework
 - [shinyBS](https://ebailey78.github.io/shinyBS/) - Bootstrap components
 - [shinycssloaders](https://daattali.com/shiny/shinycssloaders-demo/) - Loading spinners
-- [spotifyr](https://www.rcharlie.com/spotifyr/) - Spotify API wrapper
 - [stringr](https://stringr.tidyverse.org/) - String manipulation
 
 ## 🎨 Tech Stack

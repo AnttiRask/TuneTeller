@@ -36,7 +36,7 @@ The app follows a standard Shiny `ui.R`/`server.R` split:
 - **`app/ui.R`** - UI definition using `bslib::page_fluid` with Bootstrap 5 dark theme. Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps (BiblioStatus, Gallery of the Day, TrackTeller, TuneTeller)
 - **`app/server.R`** - Server logic with two main reactive flows:
   1. `observeEvent(input$go)` sends the user's prompt to OpenAI's `/v1/responses` endpoint, parses the response to extract artist name and description, and caches the result in `recommendation_cache` reactiveVal
-  2. `artist_details()` reactive takes the cached recommendation, searches Spotify via `spotifyr::search_spotify()`, and returns artist metadata (image, followers, Spotify URL)
+  2. `artist_details()` reactive takes the cached recommendation, searches Spotify via `search_spotify_artist()` (`app/www/spotify.R`, `httr2`), and returns artist metadata (image, followers, Spotify URL)
 - **`app/www/prompt_versions.R`** - OpenAI prompt templates using `stringr::str_glue` interpolation (currently uses `prompt_ver2`)
 - **`app/www/styles.css`** - Custom dark theme CSS; brand color is `#C1272D`, Spotify green is `#1DB954`, background is `#191414`
 
