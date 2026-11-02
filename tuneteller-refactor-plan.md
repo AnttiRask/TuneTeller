@@ -4,13 +4,13 @@
 >
 > **For Claude Code:** read this whole file first. Every change is checked with the user before it is committed, pushed or deployed. Phase 1 is app code only; Phase 2 touches cloud resources and each step needs approval. Never print secrets (see §8).
 
-*Written 2026-10-18; last updated the same day, after the fixes in the sibling apps. Phase 1 and Phase 2 are done and live. §10 lists what is left.*
+*Written 2026-10-18; last updated 2026-11-02, after bringing TuneTeller up to the level of the other apps (§10). Phase 1 and Phase 2 are done and live.*
 
 ---
 
 ## 0. Status at a glance
 
-Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app` in project `tuneteller-app` (revision `tuneteller-app-00024-2x5`, commit `8a477280898a`, 100 % of traffic, `--max-instances 3`).
+Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app` in project `tuneteller-app` (revision `tuneteller-app-00025-h2r`, commit `e09bf9cd906b`, 100 % of traffic, `--max-instances 3`).
 
 | # | What | Status |
 |---|---|---|
@@ -21,10 +21,11 @@ Live: https://tuneteller.youcanbeapirate.com, Cloud Run service `tuneteller-app`
 | 2c | GitHub Actions: tests, then deploy + smoke test (checks the `git-sha` label); Dependabot | **Done, live** (first push-triggered run `39149036071`) |
 | 2d | Complete `renv.lock` (41 packages, R 4.6.1), `rocker/r-ver:4.6.1` non-root image (1.85 GB), allowlist `.dockerignore` | **Done, live** (revision `00019-j79`) |
 | 2e | Repo hygiene: secret scanning, push protection, Dependabot security updates, `main` protected (no force-push or deletion, enforced for admins) | **Done**, read back |
-| 2f | Cleanup: Artifact Registry keeps the 5 newest versions; 30-day lifecycle on the two build buckets; two stray failed services deleted | **Applied**; the registry cleanup has **not run yet** (still 20 versions on 2026-10-18 after the last deploy), see §10 |
+| 2f | Cleanup: Artifact Registry policy (since 2026-11-02 the siblings' rule, in `infra/`: keep the 5 newest, delete older than 14 days); 30-day lifecycle on the two build buckets; two stray failed services deleted | **Done**; the cleanup ran (20 versions on 2026-10-18, 5 on 2026-11-02) |
 | 2g | Three Dependabot PRs (`auth` 3, `setup-gcloud` 3, `checkout` 7) merged one at a time, each followed by a deploy and a check | **Done** (`00020`-`00022`) |
 | 2h | Websocket: `--timeout 3600` and `--session-affinity` | **Done, live**. `session$allowReconnect(TRUE)` was added too but **does nothing** on Cloud Run (§6) |
 | 2i | Polish: the CSP is **enforced** (promoted from report-only, `'unsafe-eval'` dropped, Spotify image hosts widened to `*.scdn.co`); `--max-instances 3` (was 20); dark text on the Spotify button (7.1:1, was 2.6:1); palette notes moved from `www/` to `design/`; the tests run on the packages in `renv.lock` (R 4.6.1); README screenshot and project page refreshed | **Done and verified live** (revision `00024-2x5`; §10) |
+| 2j | Parity with the other apps (§10): the six R files are no longer public (`scripts/`, not `www/`); `GET /health` (200 `ok` / 503 naming what is misconfigured) checked by the deploy smoke test; uptime check on `/health` every 5 minutes plus an email alert; the cleanup policy and the alert script in `infra/`; a "Your session has ended" dialog with a Reload button | **Done and verified live** (revision `00025-h2r`; the uptime check was passing from its first two probe locations, São Paulo and Iowa, within 3 minutes of being created) |
 
 Related work in the sibling apps, done in the same session: the light/dark switch now shows the mode a click switches to in TuneTeller and FillariStatus (own button instead of bslib's, which can't be restyled); `allowReconnect("force")` in FillariStatus and BiblioStatus, plus a fix in BiblioStatus that restores the committed filters after a reconnect (details in their `CLAUDE.md` files).
 
@@ -53,20 +54,21 @@ Target layout (mirrors FillariStatus §5):
 
 ```
 app/
-├── run.R            # entry point: port, security-headers wrapper
-├── global.R         # libraries, sources www/*.R
+├── run.R            # entry point: port, /health and the security headers around the app
+├── global.R         # libraries, sources scripts/*.R
 ├── ui.R             # theme, layout, footer (reads variables.R / strings.R)
 ├── server.R         # reactive logic only
-└── www/
-    ├── variables.R  # model, limits, cooldown, endpoints, brand colours, footer links
-    ├── strings.R    # ALL user-facing text
-    ├── prompt_versions.R  # prompt templates
-    ├── api.R        # OpenAI + Spotify calls (never throw), state results
-    ├── functions.R  # pure helpers (sanitise, build prompt, format followers)
-    ├── security.R   # security headers + with_security_headers()
-    └── styles.css
+├── scripts/         # R code. NEVER in www/: everything in www/ is served to the browser
+│   ├── variables.R  # model, limits, cooldown, endpoints, brand colours, footer links
+│   ├── strings.R    # ALL user-facing text
+│   ├── prompt_versions.R  # prompt templates
+│   ├── api.R        # OpenAI + Spotify calls (never throw), state results
+│   ├── functions.R  # pure helpers (sanitise, build prompt, format followers, artist card)
+│   ├── health.R     # GET /health
+│   └── security.R   # security headers + with_security_headers()
+└── www/             # served as it is: styles.css, mode-toggle.js, cooldown.js, session-ended.js, images
 tests/testthat/
-    ├── test-spotify.R (exists)  test-api.R  test-functions.R  test-security.R  test-server.R
+    ├── test-api.R  test-functions.R  test-health.R  test-security.R  test-server.R  test-ui.R
 ```
 
 ### 3.2 Robustness
@@ -88,7 +90,7 @@ tests/testthat/
 - Footer: one shared list in `variables.R`; add **FillariStatus** (`https://fillaristatus.youcanbeapirate.com`). Keep the standard cross-app format.
 
 ### 3.6 Security
-- `www/security.R` + `run.R` wrapper (wrap `app$httpHandler`; `shiny.http.response.filter` does nothing): `X-Frame-Options: DENY`, CSP (report-only at first, **enforced since 2026-10-18**: `default-src 'self'`, inline script/style allowed, no `unsafe-eval`, Spotify's image CDNs, the font host, `wss:`), `Referrer-Policy`, `Permissions-Policy`, HSTS, `nosniff`, plus a report-only full CSP (Spotify image host `i.scdn.co`, the font host).
+- `scripts/security.R` + `run.R` wrapper (wrap `app$httpHandler`; `shiny.http.response.filter` does nothing): `X-Frame-Options: DENY`, CSP (report-only at first, **enforced since 2026-10-18**: `default-src 'self'`, inline script/style allowed, no `unsafe-eval`, Spotify's image CDNs, the font host, `wss:`), `Referrer-Policy`, `Permissions-Policy`, HSTS, `nosniff`, plus a report-only full CSP (Spotify image host `i.scdn.co`, the font host).
 - Escape everything from the model and from Spotify before it reaches the page (names, descriptions, URLs); only allow `https://` image and profile URLs.
 
 ### 3.7 Dependencies
@@ -182,6 +184,12 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 - **Screenshots with the Chrome tool:** `resize_window` does not change the viewport (it stayed 1174x771), so a tall page is cut off; scale the page instead (`document.body.style.zoom = 0.73`, `document.documentElement.style.overflow = 'hidden'`, scroll to the top). The mouse pointer is drawn into the saved image and moving it can land it on the content (the zoom skews its coordinates): leave it in empty space and crop it out (PIL is available; ImageMagick is not). Saved captures go to `/tmp/claude-chrome-screenshots-*`: delete them afterwards.
 - **`git commit` commits everything staged, not just what you last `git add`ed.** A `git mv` done earlier was swept into an unrelated commit. Run `git diff --cached --stat` before every commit; if it already went wrong and nothing is pushed, `git reset <last pushed commit>` keeps the working tree and lets you redo the commits.
 - **A Docker VM can't bind-mount `/tmp`** (Rancher Desktop) and **`docker build` output reports the pipe's exit code**; use `docker cp` and read the log's own last line.
+- **R files in `www/` are public.** Shiny serves everything in `www/` as a static file, so `www/api.R` was one request away. Put R code in `scripts/` (or `R/`, which Shiny sources itself); `www/` is for what the browser needs. Check with `curl -s -o /dev/null -w '%{http_code}' https://<app>/<file>.R`.
+- **`display: flex` beats the `hidden` attribute** (author CSS overrides the browser's `[hidden] { display: none }`): a hidden dialog styled with `display: flex` shows anyway. Add `#id[hidden] { display: none; }`.
+- **Shiny's `shiny:disconnected` is a jQuery event:** a native `addEventListener` never receives it; use `$(document).on(...)` after `DOMContentLoaded`. Shiny's own grey layer is `#shiny-disconnected-overlay` (z-index 99998); a dialog must sit above it. Test by closing the socket (`Shiny.shinyapp.$socket.close()`), and test the false alarm too: a page that is unloading also drops the socket.
+- **Health checks should read the environment, name what is wrong and never print values**, and must not call paid APIs. Test the 503 end to end with a deliberately broken instance (a quote-wrapped key, a non-hex id).
+- **The scratch R library under `/tmp` does not survive a restart** (and R may have been upgraded): rebuild it from Posit's binaries (`HTTPUserAgent` set) before running the tests.
+- **`sed 's/.../.../'` with a `/` in the replacement text breaks:** use another delimiter, or Python.
 - **Don't `pkill -f` a pattern that appears in your own command line:** it kills the shell running it (exit 144).
 - **A rule that denies edits to another app's deploy script** (the auto-mode classifier) is a signal to stop and ask, not to route around it.
 
@@ -214,8 +222,21 @@ Prices (secondary sources, not verified on OpenAI's page): gpt-5.4-nano US$0.20 
 
 Nothing is blocking: Phase 1 and Phase 2 are done and live, and so is the polish the user chose from the first version of this list. What remains is one check that has to wait, one thing only the user can do, and a few things decided against for now.
 
-### To check later
-- **Artifact Registry cleanup.** The policy (keep the 5 newest versions, delete the rest) is stored and is not a dry run, but Google evaluates cleanup policies about once a day. On 2026-10-18 there were 19 versions, and 20 after the last deploy. Expect about 5 (plus any new deploys) by 2026-10-20; if not, read the policy back (`gcloud artifacts repositories describe cloud-run-source-deploy --project tuneteller-app --location europe-north1`) and check the repository's audit logs. The live image is always the newest, so it is never at risk.
+### Parity with the other apps (2026-11-02)
+
+The user's comparison table (TrackTeller, BiblioStatus, Gallery of the Day, TuneTeller, FillariStatus) showed five rows where TuneTeller was behind. All five are done and verified on the live site:
+
+| Row | Before | Now |
+|---|---|---|
+| R source files public | yes: `/api.R`, `/prompt_versions.R` (the model's instructions and JSON schema), `/variables.R`, `/security.R`, `/strings.R`, `/functions.R` all returned 200 | no: moved to `app/scripts/`; all six return 404 live (`www/` keeps only what the browser needs) |
+| `/health` | 404 | 200 `ok` live; 503 `unhealthy: <names>` when a key is missing or malformed (a quote-wrapped key counts); calls neither OpenAI nor Spotify |
+| Uptime check and alert | not set up | Cloud Monitoring check on `/health` every 5 minutes (HTTPS, body must be exactly `ok`), email alert when 2 or more locations fail, created by `infra/setup_uptime_alert.sh` (re-runnable: a second run reports `exists` for all three; the address is passed in, not stored). Read back from Google: check, policy (enabled, one channel) and email channel all as intended; first results `check_passed = True` from São Paulo and Iowa |
+| Registry cleanup policy in repo | no | `infra/artifact-registry-cleanup.json`, the same rule as the siblings (keep 5, delete older than 14 days), applied from the file |
+| Message when the session ends | no | hidden `session_ended_dialog()` + `www/session-ended.js`: "Your session has ended" with a Reload button over Shiny's grey layer; not shown while the page unloads; never reloads by itself |
+
+Rows that were already at par: security headers, CSP (enforced), tests in CI, deploy waits for tests, `git-sha` label. Test blocks: 53 then, 66 now (235 expectations); the other apps have 57-283.
+
+Seen in TrackTeller and not in the table, not done: a `CSP_MODE` environment switch (enforce, report-only or off, no rebuild to go back) and a `/csp-report` endpoint that logs violations; its comment says its CSP needs `'unsafe-eval'` because shiny.min.js evals the outputs that carry scripts, which TuneTeller's outputs don't (tested: zero violations without it).
 
 ### Only the user can do
 - **OpenAI usage limit.** Set a monthly limit in the OpenAI dashboard: the cooldown is per session, so a script that opens many sessions could still make many (cheap) calls. `--max-instances 3` already caps the capacity.
@@ -224,13 +245,13 @@ Nothing is blocking: Phase 1 and Phase 2 are done and live, and so is the polish
 ### Decided against, for now (2026-10-18)
 - **TrackTeller and Gallery of the Day websocket fix** (`--timeout 3600 --session-affinity`; both still have 300 s, so their pages grey out after 5 minutes): skipped; the user will come back to it. `allowReconnect(TRUE)` is pointless there; `"force"` needs a review of each app's server first (§6).
 - **Cold start** (`min-instances` 0, about 3 s on the first visit after idle): no change.
-- **Comparing gpt-5.4-nano with gpt-5.4-mini:** skipped. `openai_model` in `www/variables.R` is the one-line switch.
+- **Comparing gpt-5.4-nano with gpt-5.4-mini:** skipped. `openai_model` in `scripts/variables.R` is the one-line switch.
 - **A page open for over an hour still greys out** (3600 s is Cloud Run's maximum and `allowReconnect(TRUE)` does nothing). `"force"` needs `recommendation_result` to be idempotent first (§6); not worth it for short sessions.
 - **R package updates stay manual** (Dependabot doesn't cover renv): regenerate `renv.lock` inside the image as described in §5.3 when an update or a new package is needed.
 
 ### Done from the first version of this list (2026-10-18)
 - **`--max-instances 3`** in `deploy.sh`, the workflow and `DEPLOY.md` (it was Cloud Run's default of 20).
-- **CSP enforced.** One policy in `www/security.R`: `default-src 'self'`, inline script and style (Shiny and bslib need them), **no `unsafe-eval`**, images from `*.scdn.co` and `*.spotifycdn.com`, fonts from `fonts.cdnfonts.com`, `connect-src 'self' wss:`. Tested in a browser with a violation recorder running from the first script: **zero violations** across page load, a real recommendation (artist image, font, Spotify button) and both colour modes; a foreign image and script were blocked, as they should be (§6 for how to test this). Tests in `test-security.R`.
+- **CSP enforced.** One policy in `scripts/security.R`: `default-src 'self'`, inline script and style (Shiny and bslib need them), **no `unsafe-eval`**, images from `*.scdn.co` and `*.spotifycdn.com`, fonts from `fonts.cdnfonts.com`, `connect-src 'self' wss:`. Tested in a browser with a violation recorder running from the first script: **zero violations** across page load, a real recommendation (artist image, font, Spotify button) and both colour modes; a foreign image and script were blocked, as they should be (§6 for how to test this). Tests in `test-security.R`.
 - **Spotify button contrast:** dark text (`#191414`) on the green, 7.1:1 (white was 2.6:1), and a brighter green on hover/focus, 9.5:1 (the old darker green was 4.3:1). The underline is gone too. Test in `test-ui.R`.
 - **Palette notes** moved from `app/www/` (served publicly) to `design/youcanbeapirate_colors.txt`.
 - **CI on the lock:** `tests.yml` now takes the R version from `renv.lock` (it was pinned to 4.5 while the image runs 4.6.1) and restores the locked packages with `setup-renv`; `testthat` and `withr` are installed on top without being recorded. Checked in the run log: R 4.6.1, shiny 1.14.0, bslib 0.12.0, httr2 1.3.0, shinycssloaders 1.1.0, all as binaries; 1 min 43 s.
