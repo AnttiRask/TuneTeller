@@ -43,7 +43,8 @@ ui <- page_fluid(
         tags$link(rel = "shortcut icon", type = "image/png", href = "favicon.png"),
         tags$style(HTML(theme_css())),
         tags$script(src = "mode-toggle.js"),
-        tags$script(src = "cooldown.js")
+        tags$script(src = "cooldown.js"),
+        tags$script(src = "session-ended.js")
     ),
 
     # Custom CSS styles
@@ -100,5 +101,8 @@ ui <- page_fluid(
     ), # div
 
     # Add footer with cross-linking
-    create_app_footer("tuneteller")
+    create_app_footer("tuneteller"),
+
+    # Hidden until the connection to the server ends
+    session_ended_dialog()
 ) # page_fluid

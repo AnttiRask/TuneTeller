@@ -160,6 +160,29 @@ mode_toggle_button <- function() {
   )
 }
 
+# What the user sees when the connection to the server ends. Shiny only greys the
+# page out then (its "Disconnected from the server" box belongs to Shiny Server and
+# Posit Connect), so the page looked frozen with no explanation. The connection ends
+# after an hour at the latest (Cloud Run's limit for one request) and when the device
+# sleeps or loses its network, and nothing can resume the session (allowReconnect
+# does nothing here), so say so and offer Reload. Hidden until session-ended.js
+# shows it; the text lives in strings.R.
+session_ended_dialog <- function() {
+  tags$div(
+    id = "session-ended",
+    role = "alertdialog",
+    `aria-labelledby` = "session-ended-title",
+    `aria-describedby` = "session-ended-text",
+    hidden = NA,
+    tags$div(
+      class = "session-ended-box",
+      tags$h2(id = "session-ended-title", strings$session_ended_title),
+      tags$p(id = "session-ended-text", strings$session_ended_text),
+      tags$button(type = "button", class = "button-recommendation", strings$session_ended_button)
+    )
+  )
+}
+
 # Artist card --------------------------------------------------------------------
 
 # What the card shows for a result. `result$state` is one of:

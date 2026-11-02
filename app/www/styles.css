@@ -248,3 +248,41 @@ a:focus, button:focus, input:focus, select:focus, textarea:focus {
 .skip-link:focus {
     top: 0;
 }
+
+/* The "Your session has ended" dialog (session-ended.js shows it): above Shiny's grey
+   disconnected layer, which blocks the page; the box takes the clicks */
+#session-ended {
+    position: fixed;
+    inset: 0;
+    z-index: 100001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    pointer-events: none;
+}
+
+#session-ended[hidden] {
+    display: none;
+}
+
+#session-ended .session-ended-box {
+    pointer-events: auto;
+    max-width: 28rem;
+    padding: 1.5rem;
+    border: 1px solid var(--tt-card-border);
+    border-radius: 5px;
+    background-color: var(--tt-card-bg);
+    color: var(--bs-body-color);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+#session-ended h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.5rem;
+    text-align: left;
+}
+
+#session-ended p {
+    margin-bottom: 1.25rem;
+}

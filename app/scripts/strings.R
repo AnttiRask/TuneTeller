@@ -15,6 +15,11 @@ strings <- list(
   mode_to_light = "Switch to light mode",
   mode_to_dark = "Switch to dark mode",
 
+  # Shown when the connection to the server ends (see session_ended_dialog())
+  session_ended_title = "Your session has ended",
+  session_ended_text = "The connection to the server was closed. That happens after about an hour, or when the device goes to sleep or loses its network. Reload the page to start again.",
+  session_ended_button = "Reload",
+
   # Notifications
   prompt_empty = "Describe the music you would like to hear first.",
   prompt_too_long = "You exceeded the {prompt_max_chars} character limit!",

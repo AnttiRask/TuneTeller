@@ -72,3 +72,40 @@ test_that("the Spotify button uses dark text on its green, not white (contrast)"
     expect_no_match(block(selector), "color: #FFFFFF", fixed = TRUE, info = selector)
   }
 })
+
+test_that("the session-ended dialog is in the page, hidden, with its text from strings.R", {
+  html <- as.character(session_ended_dialog())
+
+  expect_match(html, "id=\"session-ended\"", fixed = TRUE)
+  expect_match(html, "role=\"alertdialog\"", fixed = TRUE)
+  expect_match(html, "aria-labelledby=\"session-ended-title\"", fixed = TRUE)
+  # hidden until session-ended.js shows it
+  expect_match(html, "<div id=\"session-ended\"[^>]* hidden", perl = FALSE)
+  expect_match(html, strings$session_ended_title, fixed = TRUE)
+  expect_match(html, strings$session_ended_text, fixed = TRUE)
+  expect_match(html, str_c(">", strings$session_ended_button, "<"), fixed = TRUE)
+
+  rendered <- htmltools::renderTags(ui)
+  expect_match(rendered$html, "id=\"session-ended\"", fixed = TRUE)
+  expect_match(rendered$head, "<script src=\"session-ended.js\"></script>", fixed = TRUE)
+})
+
+test_that("session-ended.js shows the dialog on Shiny's disconnect event and never reloads by itself", {
+  js <- paste(readLines(file.path(app_dir, "www", "session-ended.js")), collapse = "\n")
+
+  # Shiny triggers this through jQuery; a native listener never receives it
+  expect_match(js, "$(document).on(\"shiny:disconnected\"", fixed = TRUE)
+  expect_match(js, "box.hidden = false", fixed = TRUE)
+  # only the button reloads, and closing or reloading the page is not a lost session
+  expect_equal(str_count(js, "location.reload\\(\\)"), 1)
+  expect_match(js, "beforeunload", fixed = TRUE)
+})
+
+test_that("the dialog sits above Shiny's grey layer, and the hidden attribute still hides it", {
+  css <- paste(readLines(file.path(app_dir, "www", "styles.css")), collapse = "\n")
+
+  expect_match(css, "#session-ended[hidden] {\n    display: none;", fixed = TRUE)
+  z <- as.integer(str_match(css, "#session-ended \\{[^}]*z-index: ([0-9]+)")[, 2])
+  # Shiny's #shiny-disconnected-overlay uses z-index 99999
+  expect_gt(z, 99999L)
+})
