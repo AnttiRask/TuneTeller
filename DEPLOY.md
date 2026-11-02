@@ -137,6 +137,24 @@ gcloud run deploy tuneteller-app --source .
 
 ## Monitoring
 
+**`GET /health`** answers `200 ok` when the three keys are set and well-formed, or `503 unhealthy: <names>` (`OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`; names only, never values; a key wrapped in quotes counts as broken). It does not call OpenAI or Spotify, so probing it costs nothing and an outage there never fails a deploy. The deploy workflow's smoke test checks it, and so does the uptime check.
+
+**Uptime check and alert** (Cloud Monitoring, free at this volume): `infra/setup_uptime_alert.sh` creates an email channel, a check on `https://tuneteller.youcanbeapirate.com/health` every 5 minutes, and a policy that emails when the check fails from at least two locations at once (one flaky probe or a cold start doesn't), and when it recovers. It is re-runnable (matched by display name) and the address is passed in, not stored in the repo:
+
+```bash
+ALERT_EMAIL=you@example.com infra/setup_uptime_alert.sh
+```
+
+If an alert arrives: open `/health` in a browser (a 503 names what is wrong), then check the revision and the logs below, and roll back if the last deploy did it.
+
+**Image cleanup:** `infra/artifact-registry-cleanup.json` keeps the 5 newest images and deletes anything older than 14 days. Apply or change it with:
+
+```bash
+gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy \
+  --project tuneteller-app --location europe-north1 \
+  --policy=infra/artifact-registry-cleanup.json --no-dry-run
+```
+
 View logs:
 
 ```bash
@@ -150,7 +168,7 @@ View in console:
 
 ## Automatic deploys (GitHub Actions)
 
-A push to `main` that changes `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` runs `.github/workflows/deploy_shiny_app.yml`: the tests (`tests.yml`) must pass, then the app is built and deployed to Cloud Run, and a smoke test checks that the service carries the commit's `git-sha` label and answers HTTP 200. Docs-only or tests-only pushes don't deploy. To deploy by hand: Actions tab > "Deploy to Cloud Run" > Run workflow (from `main`). `./deploy.sh` still works; keep its flags in sync with the workflow.
+A push to `main` that changes `app/**`, `Dockerfile`, `.dockerignore`, `renv.lock`, `.Rprofile` or `renv/activate.R|settings.json` runs `.github/workflows/deploy_shiny_app.yml`: the tests (`tests.yml`) must pass, then the app is built and deployed to Cloud Run, and a smoke test checks that the service carries the commit's `git-sha` label, that `/health` answers `200 ok`, and that the front page answers HTTP 200. Docs-only or tests-only pushes don't deploy. To deploy by hand: Actions tab > "Deploy to Cloud Run" > Run workflow (from `main`). `./deploy.sh` still works; keep its flags in sync with the workflow.
 
 There are no stored keys. The workflow logs in through **Workload Identity Federation**: pool `tuneteller`, provider `github-oidc` in project `tuneteller-app`, which only accepts `AnttiRask/TuneTeller` on `refs/heads/main`. It then acts as the service account `tuneteller-deploy`, which can deploy only the `tuneteller-app` service (see `tuneteller-refactor-plan.md` §5.2 for its exact permissions). The service itself runs as `tuneteller-runtime`, which can read only its three secrets.
 

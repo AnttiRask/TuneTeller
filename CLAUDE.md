@@ -33,19 +33,21 @@ Copy `.env.example` to `.env` and fill in: `OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`
 
 ## Architecture
 
-The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loading libraries and sourcing `app/www/*.R`:
+The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loading libraries and sourcing `app/scripts/*.R`. **R sources live in `app/scripts/`, never in `app/www/`: everything in `www/` is served to the browser** (they were public until 2026-11-03):
 
-- **`app/run.R`** - Entry point; sets the working directory to `app/`, wraps the app's page handler with the security headers and starts the server on `$PORT` (default 8080)
+- **`app/run.R`** - Entry point; sets the working directory to `app/`, wraps the app's page handler with `/health` and the security headers and starts the server on `$PORT` (default 8080)
 - **`app/global.R`** - Libraries, then sources `variables.R`, `strings.R`, `prompt_versions.R`, `functions.R`, `api.R`
 - **`app/ui.R`** - `bslib::page_fluid` with Bootstrap 5, dark by default and a light/dark switch (our own button, `mode_toggle_button()` + `www/mode-toggle.js`, because bslib's `input_dark_mode()` always shows the current mode and its icon can't be restyled). Contains `create_app_footer()`, a shared footer component used across multiple youcanbeapirate.com apps; its links come from `footer_apps` in `variables.R`
 - **`app/server.R`** - Reactive logic only: `recommendation_result` (an `eventReactive` on `input$go`) cleans the prompt, enforces the 10 s cooldown, calls `get_recommendation()` then `find_artist()` and returns a state list (`ok` / `no_artist` / `error`) that `artist_card_ui()` renders. The spinner covers the whole request because the card output depends on it
-- **`app/www/variables.R`** - Model name, limits (190 characters, 10 s cooldown, timeouts), brand colours, footer links
-- **`app/www/strings.R`** - All user-facing text
-- **`app/www/prompt_versions.R`** - Prompt versions; `prompt_ver3` (instructions + JSON schema) is current
-- **`app/www/api.R`** - OpenAI (`/v1/responses`, JSON-schema output) and Spotify (client credentials, `httr2`). `get_recommendation()` and `find_artist()` never throw; they return `list(status, data)`
-- **`app/www/functions.R`** - Pure helpers: `clean_prompt()`, `parse_recommendation()`, `theme_css()`, `artist_card_ui()`
-- **`app/www/security.R`** - Security headers and `with_security_headers()`
+- **`app/scripts/variables.R`** - Model name, limits (190 characters, 10 s cooldown, timeouts), brand colours, footer links
+- **`app/scripts/strings.R`** - All user-facing text
+- **`app/scripts/prompt_versions.R`** - Prompt versions; `prompt_ver3` (instructions + JSON schema) is current
+- **`app/scripts/api.R`** - OpenAI (`/v1/responses`, JSON-schema output) and Spotify (client credentials, `httr2`). `get_recommendation()` and `find_artist()` never throw; they return `list(status, data)`
+- **`app/scripts/functions.R`** - Pure helpers: `clean_prompt()`, `parse_recommendation()`, `theme_css()`, `artist_card_ui()`
+- **`app/scripts/security.R`** - Security headers (including the enforced CSP) and `with_security_headers()`
+- **`app/scripts/health.R`** - `GET /health`: 200 `ok`, or 503 naming what is misconfigured (`OPENAI_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`; names only, never values). Calls neither OpenAI nor Spotify. Wired in `run.R`, so `runApp("app/")` has no `/health`
 - **`app/www/mode-toggle.js`** - Starts the page in dark mode and flips Bootstrap's `data-bs-theme`; the icon shows the mode a click switches to (sun while dark, moon while light)
+- **`app/www/session-ended.js`** - Shows the hidden `session_ended_dialog()` ("Your session has ended" + Reload) when Shiny's connection ends (Cloud Run closes it after an hour at the latest, and a sleeping device or lost network does the same); `allowReconnect` can't resume anything here
 - **`app/www/cooldown.js`** - Disables the button and shows the seconds left, driven by the server
 - **`app/www/styles.css`** - Custom styles; colours come from CSS custom properties injected by `theme_css()`; brand color is `#C1272D`, Spotify green is `#1DB954`, dark background is `#191414`
 - **`tests/testthat/`** - Tests with mocked HTTP (`httr2::local_mocked_responses()`); `helper-app.R` loads the app code
@@ -70,5 +72,6 @@ The app follows a standard Shiny `ui.R`/`server.R` split, with `global.R` loadin
 - Pushes to `main` that change `app/**` or the build files deploy automatically (`.github/workflows/deploy_shiny_app.yml`: tests, then build + deploy + smoke test; keyless login through Workload Identity Federation as `tuneteller-deploy`). Run the tests first and batch app changes into one push. Docs, tests and plan-only pushes don't deploy. See `DEPLOY.md`
 - The service runs as `tuneteller-runtime` (only the 3 secrets), timeout 3600 s with session affinity (a shorter timeout makes the websocket drop after 5 minutes and the page grey out). `session$allowReconnect(TRUE)` in `server.R` has no effect on Cloud Run, and `"force"` must not be used here (a reconnect would re-run the paid OpenAI call): see `DEPLOY.md`
 - `--max-instances 3` (set in `deploy.sh` and the workflow): the cooldown is per session, so the instance cap is what limits how many paid OpenAI calls a script that opens many sessions can make
-- The **Content-Security-Policy is enforced** (`app/www/security.R`). Anything the page loads from a new host (images, fonts, scripts, a websocket) must be added there, or the browser silently blocks it. Chrome's console tool shows no CSP violations: test with a recorder as the first script of a throwaway copy, see `tuneteller-refactor-plan.md` §6
+- The **Content-Security-Policy is enforced** (`app/scripts/security.R`). Anything the page loads from a new host (images, fonts, scripts, a websocket) must be added there, or the browser silently blocks it. Chrome's console tool shows no CSP violations: test with a recorder as the first script of a throwaway copy, see `tuneteller-refactor-plan.md` §6
+- `GET /health` is what the deploy smoke test and the uptime check use. `infra/` holds what is set up in Google Cloud and not by the workflow: `artifact-registry-cleanup.json` (keep the 5 newest images, delete older than 14 days; apply it with `gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy --project tuneteller-app --location europe-north1 --policy=infra/artifact-registry-cleanup.json --no-dry-run`) and `setup_uptime_alert.sh` (uptime check on `/health` every 5 minutes plus an email alert; `ALERT_EMAIL=... infra/setup_uptime_alert.sh`, re-runnable, the address is not kept in the repo)
 - `docker compose restart` does NOT re-read `.env` - use `docker compose up -d --force-recreate`

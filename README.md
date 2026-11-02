@@ -10,7 +10,7 @@
 - 🎨 Clean UI with Spotify-inspired styling: dark by default, with a light mode switch
 - 🔗 Direct link to artist's Spotify profile
 - ⚡ Loading spinner while fetching recommendations
-- 🛡️ Friendly messages instead of errors, a short wait between recommendations, security headers
+- 🛡️ Friendly messages instead of errors (including when the session ends), a short wait between recommendations, an enforced CSP, a `/health` endpoint with an uptime alert
 
 ## 📸 Screenshot
 
@@ -25,21 +25,26 @@
 ```
 TuneTeller/
 ├── app/
-│   ├── run.R                    # App entry point (adds the security headers)
-│   ├── global.R                 # Libraries; sources the files in www/
+│   ├── run.R                    # App entry point (adds /health and the security headers)
+│   ├── global.R                 # Libraries; sources the files in scripts/
 │   ├── ui.R                     # UI definition and the shared footer
 │   ├── server.R                 # Reactive logic
-│   └── www/
-│       ├── variables.R          # Model, limits, brand colours, footer links
-│       ├── strings.R            # All user-facing text
-│       ├── prompt_versions.R    # OpenAI prompt versions
-│       ├── api.R                # OpenAI and Spotify calls (never throw)
-│       ├── functions.R          # Pure helpers (cleaning, parsing, the artist card)
-│       ├── security.R           # Security headers
+│   ├── scripts/                 # R code: never served to the browser
+│   │   ├── variables.R          # Model, limits, brand colours, footer links
+│   │   ├── strings.R            # All user-facing text
+│   │   ├── prompt_versions.R    # OpenAI prompt versions
+│   │   ├── api.R                # OpenAI and Spotify calls (never throw)
+│   │   ├── functions.R          # Pure helpers (cleaning, parsing, the artist card)
+│   │   ├── health.R             # GET /health (what is misconfigured, by name)
+│   │   └── security.R           # Security headers
+│   └── www/                     # Served to the browser as it is
 │       ├── cooldown.js          # Disables the button during the cooldown
+│       ├── mode-toggle.js       # Light/dark switch
+│       ├── session-ended.js     # "Your session has ended" dialog
 │       ├── favicon.png          # Browser tab icon
 │       ├── placeholder_image.png # Default image before recommendation
 │       └── styles.css           # Custom styles (dark and light mode)
+├── infra/                       # What lives in Google Cloud: cleanup policy, uptime alert
 ├── tests/testthat/              # Tests (mocked HTTP, no live API calls)
 ├── deploy.sh                    # Google Cloud Run deployment script
 ├── Dockerfile                   # Container image definition
