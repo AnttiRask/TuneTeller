@@ -1,7 +1,7 @@
 library(shiny)
 
-# Run from the app directory so ui.R / global.R find their www/ files
-source("app/www/security.R")
+# Run from the app directory so ui.R / global.R find their www/ and scripts/ files
+source("app/scripts/security.R")
 setwd("app")
 
 port <- as.integer(Sys.getenv("PORT", "8080"))

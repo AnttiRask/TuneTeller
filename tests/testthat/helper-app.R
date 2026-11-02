@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 app_dir <- normalizePath(test_path("../../app"))
 
 for (file in c("variables.R", "strings.R", "prompt_versions.R", "functions.R", "api.R")) {
-  sys.source(file.path(app_dir, "www", file), envir = globalenv())
+  sys.source(file.path(app_dir, "scripts", file), envir = globalenv())
 }
 
 # A parsed Responses API reply with one message holding `text`

@@ -1,4 +1,4 @@
-source(test_path("../../app/www/security.R"))
+source(test_path("../../app/scripts/security.R"))
 
 test_that("the header set covers framing, referrers, permissions, transport and CSP", {
   h <- security_headers()
