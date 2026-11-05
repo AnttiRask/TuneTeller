@@ -240,7 +240,7 @@ Seen in TrackTeller and not in the table, not done: a `CSP_MODE` environment swi
 
 ### Only the user can do
 - **OpenAI usage limit.** Set a monthly limit in the OpenAI dashboard: the cooldown is per session, so a script that opens many sessions could still make many (cheap) calls. `--max-instances 3` already caps the capacity.
-- **Billing budget.** Confirm that the EUR 30/month budget on the shared billing account covers this project (I could not read budgets: the API isn't enabled in `tuneteller-app`, and I didn't enable it).
+- ~~Billing budget.~~ **Done 2026-11-05.** The assumption was wrong: the EUR 30 budgets on the shared billing account cover `bibliostatus-app` only, so this project had none. The user created `tuneteller-app monthly` (EUR 10 a month, this project only, email at 50%, 90% and 100% of actual spend; read back) with `--billing-project` set to a project where the Billing Budgets API is enabled, so nothing was enabled in `tuneteller-app`.
 
 ### Decided against, for now (2026-10-18)
 - **TrackTeller and Gallery of the Day websocket fix** (`--timeout 3600 --session-affinity`; both still have 300 s, so their pages grey out after 5 minutes): skipped; the user will come back to it. `allowReconnect(TRUE)` is pointless there; `"force"` needs a review of each app's server first (§6).
