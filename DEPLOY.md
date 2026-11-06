@@ -127,6 +127,8 @@ Google Cloud Run has a generous free tier that covers personal use:
 
 For a personal project with occasional use, this should be **completely free**.
 
+A budget named "tuneteller-app monthly" (EUR 10 a month, this project only) emails the billing account's admins at 50%, 90% and 100% of actual spend (created 2026-11-05; before that this project had none). It only alerts; `--max-instances 3` is what limits the cost, and it does not see OpenAI's own billing (set the usage limit in the OpenAI dashboard). The Billing Budgets API is not enabled on `tuneteller-app`: run budget commands with `--billing-project` set to a project where it is (`gcloud billing budgets list --billing-account 01022A-90DC69-4116A8 --billing-project=<project>`). The two build buckets delete objects older than 30 days.
+
 ## Updating the App
 
 To deploy updates:
