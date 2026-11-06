@@ -88,12 +88,14 @@ echo -n "your_openai_key" | gcloud secrets create openai-api-key --data-file=-
 echo -n "your_client_id" | gcloud secrets create spotify-client-id --data-file=-
 echo -n "your_client_secret" | gcloud secrets create spotify-client-secret --data-file=-
 
-# Grant Cloud Run access to secrets
-PROJECT_NUMBER=$(gcloud projects describe tuneteller-app --format="value(projectNumber)")
+# The app runs as its own account, which can read these three secrets and nothing
+# else (not as the default compute account: that one only needs
+# roles/cloudbuild.builds.builder for builds, and should not read the secrets)
+gcloud iam service-accounts create tuneteller-runtime --display-name "TuneTeller runtime"
 
 for SECRET in openai-api-key spotify-client-id spotify-client-secret; do
   gcloud secrets add-iam-policy-binding $SECRET \
-    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --member="serviceAccount:tuneteller-runtime@tuneteller-app.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
 done
 
@@ -103,6 +105,7 @@ gcloud run deploy tuneteller-app \
   --platform managed \
   --region europe-north1 \
   --allow-unauthenticated \
+  --service-account "tuneteller-runtime@tuneteller-app.iam.gserviceaccount.com" \
   --set-secrets "OPENAI_API_KEY=openai-api-key:latest" \
   --set-secrets "SPOTIFY_CLIENT_ID=spotify-client-id:latest" \
   --set-secrets "SPOTIFY_CLIENT_SECRET=spotify-client-secret:latest" \
