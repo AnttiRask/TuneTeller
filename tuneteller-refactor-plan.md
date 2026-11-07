@@ -144,7 +144,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 
 ### 5.2 Identity and deploy (built and tested 2026-10-18)
 
-**Runtime:** `tuneteller-runtime@tuneteller-app` (no project roles; `secretAccessor` on the 3 secrets only). The compute account lost `roles/editor` and keeps `cloudbuild.builds.builder`; a source deploy afterwards built fine.
+**Runtime:** `tuneteller-runtime@tuneteller-app` (no project roles; `secretAccessor` on the 3 secrets only). The compute account lost `roles/editor` and keeps `cloudbuild.builds.builder`; a source deploy afterwards built fine. **2026-11-07:** its leftover `secretAccessor` on the 3 secrets was removed too (with the owner's approval, old policies saved); new revisions of `tuneteller-app` started afterwards (a harmless label added and removed), so `tuneteller-runtime` alone is enough.
 
 **Keyless deploy identity (all in `tuneteller-app`):**
 - Pool `tuneteller`, provider `github-oidc` (separate from BiblioStatus' `github` pool). Attribute condition: `assertion.repository == 'AnttiRask/TuneTeller' && assertion.ref == 'refs/heads/main'`; mapping `google.subject`, `attribute.repository`, `attribute.ref`. The STS API (`sts.googleapis.com`) had to be enabled.
