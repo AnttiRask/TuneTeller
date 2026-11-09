@@ -128,7 +128,7 @@ tests/testthat/
 
 The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTeller (revision 00012) are healthy. This is what the FillariStatus plan means by "TrackTeller/TuneTeller show not ready". Deleting any of them needs the user's approval (each is in the project of another app). **Status 2026-11-07: all of them are gone.** The two in `tuneteller-app` were deleted earlier (row 2f), the one in `trackteller-app` on 2026-10-31, and the last two in `bibliostatus-app` (`trackteller-app`, `tuneteller-app`) on 2026-11-07 with the owner's approval, after checking again: no requests and no log entries in 30 days, no domain mapping, no reference to them in any repo. Their configurations were saved first. Each project now lists only its own app.
 
-**`bibliostatus-app` (for comparison):** WIF pool `github` with provider `github-oidc` restricted to the FillariStatus and BiblioStatus repos; service accounts `github-deploy` (broad: run.admin, storage.admin, artifactregistry.writer, builds.builder, serviceAccountUser, logging.viewer, all project-wide), `bibliostatus-runtime`, `fillaristatus-runtime`; secrets for Turso and Digitransit; the compute account has no Editor. **A failed stray `tuneteller-app` service already sits there, so moving would first need it deleted (same service name).**
+**`bibliostatus-app` (for comparison):** WIF pool `github` with provider `github-oidc` restricted to the FillariStatus and BiblioStatus repos; service accounts `github-deploy` (broad: run.admin, storage.admin, artifactregistry.writer, builds.builder, serviceAccountUser, logging.viewer, all project-wide), `bibliostatus-runtime`, `fillaristatus-runtime`; secrets for Turso and Digitransit; the compute account has no Editor. **A failed stray `tuneteller-app` service already sits there, so moving would first need it deleted (same service name).** **Since changed (2026-11-09):** `github-deploy` no longer exists; BiblioStatus and FillariStatus deploy with their own narrow accounts.
 
 **Move or stay?**
 
@@ -138,7 +138,7 @@ The **real** TrackTeller (`trackteller-app` project, revision 00040) and TuneTel
 | Risk | None to the live app until the workflow is switched on | The domain mapping can only exist once: delete and recreate means a **certificate wait of ~15-30 min** (FillariStatus: 17 min) and a short outage, or a careful DNS-first dance |
 | Benefit | Isolation (a leaked TuneTeller key or deploy account can't touch BiblioStatus or FillariStatus); matches TrackTeller and Gallery, which also have their own projects | One project to look at; shared budget/IAM overview (the billing account is already shared, so a billing-account budget already covers both) |
 
-**Recommendation: stay.** Nothing the user asked for needs the move, and the move adds an outage window and a clean-up job. Isolation also argues for staying, because the shared `github-deploy` account in `bibliostatus-app` is broad. Either way a **new** pool is created, as requested.
+**Recommendation: stay.** Nothing the user asked for needs the move, and the move adds an outage window and a clean-up job. Isolation also argues for staying, because the shared `github-deploy` account in `bibliostatus-app` is broad. Either way a **new** pool is created, as requested. **Since changed (2026-11-09):** `github-deploy` no longer exists; BiblioStatus and FillariStatus deploy with their own narrow accounts.
 
 **Decided by the user (2026-10-18): stay.** A new pool was created, as requested.
 
