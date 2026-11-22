@@ -1,6 +1,6 @@
 # R 4.6.1 matches renv.lock; r-ver is much smaller than rocker/shiny and we
 # only need R, because run.R starts the app with shiny::runApp()
-FROM rocker/r-ver:4.6.1
+FROM rocker/r-ver:4.6.2
 
 # System libraries needed by the R packages in renv.lock on this Ubuntu release.
 # The list comes from Posit Package Manager's sysreqs API (for Ubuntu 24.04):
